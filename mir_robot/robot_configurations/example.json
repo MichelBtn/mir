@@ -1,0 +1,86 @@
+{
+    "id": "mir_robot",
+    "calibration_dir": null,
+    "motor_bus": {
+        "motor_port": "/dev/ttyACM0",
+        "motors": {
+            "joint_1": {
+                "id": 2,
+                "model": "sts3215",
+                "norm_mode": "degrees",
+                "operating_mode": 0,
+                "P": 16,
+                "I": 0,
+                "D": 32,
+                "position_mode_velocity": 100
+            },
+            "joint_2": {
+                "id": 3,
+                "model": "sts3215",
+                "norm_mode": "degrees",
+                "operating_mode": 0,
+                "P": 16,
+                "I": 0,
+                "D": 32,
+                "position_mode_velocity": 100
+            }
+        },
+        "calibration": {
+            "joint_1": {
+                "id": 2,
+                "drive_mode": 0,
+                "homing_offset": -1635,
+                "range_min": 939,
+                "range_max": 3280
+            },
+            "joint_2": {
+                "id": 3,
+                "drive_mode": 0,
+                "homing_offset": 849,
+                "range_min": 1013,
+                "range_max": 3161
+            }
+        }
+    },
+    "sensors": {
+        "cam_1": {
+            "sensor_type": "pi_camera",
+            "ip": "192.168.1.22",
+            "width": 640,
+            "height": 480,
+            "fps": 30,
+            "enable_stats": false,
+            "frame_stats_size": 0
+        },
+        "esp_simulation_1": {
+            "sensor_type": "esp_simulation",
+            "ip": "192.168.1.18"
+        },
+        "esp_lidar_1": {
+            "sensor_type": "esp_lidar",
+            "ip": "192.168.1.26"
+        }
+    },
+    "observations": {
+        "cam_1": [
+            480,
+            640,
+            3
+        ],
+        "esp_simulation_1.omega": "float",
+        "esp_simulation_1.theta": "float",
+        "esp_lidar_1": [
+            400,
+            2
+        ],
+        "joint_1.position": "float",
+        "joint_1.velocity": "float",
+        "joint_1.current": "float",
+        "joint_1.temperature": "float",
+        "joint_2.position": "float",
+        "joint_2.velocity": "float",
+        "joint_2.current": "float",
+        "joint_2.temperature": "float"
+    },
+    "path": "/home/michel/Documents/projects/mir/mir_robot/robot_configurations/example.json"
+}

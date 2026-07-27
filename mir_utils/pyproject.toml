@@ -1,0 +1,14 @@
+# mir/mir_utils/pyproject.toml
+[project]
+name = "mir_utils"
+version = "0.1.0"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["mir_utils"]
+
+[tool.setuptools.package-dir]
+"mir_utils" = "."

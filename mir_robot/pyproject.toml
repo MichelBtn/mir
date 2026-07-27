@@ -1,0 +1,15 @@
+# mir/mir_robot/pyproject.toml
+[project]
+name = "mir_robot"
+version = "0.1.0"
+dependencies = ["mir_devices", "mir_utils"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["mir_robot"]
+
+[tool.setuptools.package-dir]
+"mir_robot" = "."

@@ -1,0 +1,45 @@
+- [x] Dans robot_monitor/actions, pouvoir grouper les actions
+- [x] Pouvoir utiliser une vitesse par défaut pour les moteurs en mode POSITION
+- [x] Supprimer le registre redondant (Moving_Velocity)
+- [x] Ajouter les données du lidar aux observations (polar plot)
+- [x] Mise à l'échelle des scopes 
+- [x] En mode VELOCITY, les positions des moteurs ne sont pas correctes
+- [x] Gérer des unités pour position (°) et vitesse (°/s) 
+- [x] Corriger bug : scan échoue en AP
+- [x] Forcer le mode phase 0
+- [x] Interdire la connexion si la calibration n'est pas valide
+- [x] Masquer la vue Monitor hors connexion robot. 
+- [x] Rendre optionnel l'affichage des statistiques fps
+- [ ] Fournir un éditeur de script python intégrant par défaut les imports mir
+- [ ] Robot monitor, la zone Action contiendra un Teleop choisi parmi une liste (actions_widget devient Teleop)
+- [ ] Mettre en place un log des consignes/déplacements pour diagnostiquer le pb de moteur qui part dans le mauvais sens
+- [ ] Mettre des marges lors de la calibration
+- [x] Lidar sur ESP32
+- [x] Intégrer ESP32 aux observations
+- [x] Changer protocole ESP32 (udp->tcp, un canal par esp)
+- [x] Intégrer camera server au projet mir
+- [x] Intégrer esp32 au projet mir
+- [ ] Pouvoir configurer les dimensions des scopes
+- [ ] Tester bande 5GHz, censée réduire la latence et limiter l'influence des réseaux extérieurs
+- [x] Intégrer la configuration des capteurs
+- [x] mir_pi_sensors : mettre à jour les identifiants
+- [x] collecter uniquement les observations activées
+- [ ] connecter uniquement les capteurs dont les observations sont activées
+- [x] mettre à jour les exemples de scripts
+- [x] les champs fps,width et height du fichier de config sont à null pour pi_camera
+- [x] changer le principe des observations (mirSensor fournit un get_observable_features, ainsi que mirMotorBus)
+- [x] réinitialisation des capteurs lorsqu'un changement de configuration le nécessite
+- [ ] ajouter le widget approprié à la fenêtre de configuration de capteur
+- [x] proposer la liste des observations disponibles après un scan devices
+- [x] refactoriser les ObservationSchema avec ObservableProperty
+- [ ] sensor_type, SENSOR_TYPE ?
+- [x] mettre à jour les icones du treeview de la configuration
+- [ ] mirFeetechMotorBus ne désactive jamais le torque à la déconnexion, voir comment on fait pour le désactiver
+- [ ] intégrer lidar sur pi zero
+- [ ] intégrer lidar sur port série
+- [ ] documentation
+- [ ] sécuriser la configuration des identifiants  du point d'accès Wifi
+
+
+
+

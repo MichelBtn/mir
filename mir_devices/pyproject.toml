@@ -1,0 +1,17 @@
+# mir/mir_devices/pyproject.toml
+
+[project]
+name = "mir_devices"
+version = "0.1.0"
+dependencies = ["mir_utils"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[tool.setuptools]
+packages = ["mir_devices"]
+
+[tool.setuptools.package-dir]
+"mir_devices" = "."

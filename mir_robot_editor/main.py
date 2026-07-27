@@ -1,0 +1,83 @@
+import traceback
+from mir_utils.logs import enable_logging
+enable_logging()
+import sys   #noqa E402
+from PySide6 import QtWidgets #noqa E402
+from mir_robot_editor.main_view import MainView #noqa E402
+from mir_robot_editor.main_viewmodel import MainViewModel #noqa E402
+from mir_utils.ui.dialogs import QtDialogProvider #noqa E402
+
+dialogProvider = QtDialogProvider()
+
+def global_exception_handler(exc_type, exc_value, exc_traceback):
+    # Évite de bloquer la fermeture de l'application si l'erreur est fatale
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    # Extraction et formatage textuel de la pile d'appels
+    tb_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+    tb_text = "".join(tb_lines)
+
+    print("==== Exception globale capturée ====", file=sys.stderr)
+    print(tb_text, file=sys.stderr)
+    print("====================================", file=sys.stderr)
+
+    dialogProvider.exception(exc_value, traceback_str=tb_text)
+
+# Redirection des exceptions non capturées de Python et PySide
+sys.excepthook = global_exception_handler
+
+import logging
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+class PrefixFilter(logging.Filter):
+
+  def __init__(self, prefix):
+    super().__init__()
+    self.prefix = prefix
+
+  def filter(self, record):
+    return record.getMessage().startswith(self.prefix)
+
+
+def enable_motor_bus_debug():
+  debug_logger = logging.getLogger("lerobot.motors.motors_bus")
+
+  # Évite les ajouts multiples de handlers si la fonction est appelée plusieurs fois
+  if debug_logger.hasHandlers():
+    return
+
+  # Définition et création du dossier de logs s'il n'existe pas
+  log_dir = Path(__file__).resolve().parent.parent / "logs"
+  log_dir.mkdir(parents=True, exist_ok=True)
+  log_file = log_dir / "motor_bus_debug.log"
+
+  # Configuration du Handler
+  file_handler = RotatingFileHandler(
+      log_file,
+      maxBytes= 1024 * 1024,  # 1 Mo
+      backupCount=3,
+      encoding="utf-8",
+  )
+  file_handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
+  file_handler.addFilter(PrefixFilter("[MOTOR_BUS]"))
+
+  # Configuration du Logger
+  debug_logger.setLevel(logging.DEBUG)
+  debug_logger.propagate = False
+  debug_logger.addHandler(file_handler)
+
+  debug_logger.debug("[MOTOR_BUS] ================== START ===================================================")
+
+if __name__ == '__main__':
+    enable_motor_bus_debug()
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        app = QtWidgets.QApplication(sys.argv)    
+    mainViewModel = MainViewModel(dialogProvider)
+    window = MainView(mainViewModel)
+    dialogProvider.setParent(window)
+    window.show()
+    sys.exit(app.exec())    
+    

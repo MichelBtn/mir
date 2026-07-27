@@ -1,0 +1,37 @@
+{
+	"folders": [
+		{ "path": "mir_devices" },
+		{ "path": "mir_robot" },
+		{ "path": "mir_robot_editor" },
+		{ "path": "mir_utils" },
+		{ "path": "mir_user_scripts" },
+		{ "path": "mir_pi_sensors" },
+		{ "path": "root_files" },
+		{ "path": "tests" }
+	],
+	"settings": {
+		"python.analysis.extraPaths": [
+			"${workspaceFolder:mir_devices}/..",
+			"${workspaceFolder:mir_robot}/..",
+			"${workspaceFolder:mir_robot_editor}/..",
+			"${workspaceFolder:mir_utils}/.."
+		],
+		"python.analysis.autoImportCompletions": true,
+		"python.defaultInterpreterPath": "/home/michel/miniforge3/envs/lerobot/bin/python",
+    "terminal.integrated.env.linux": {
+			"PYTHONPATH": "${workspaceFolder:mir_robot_editor}/..:${workspaceFolder:mir_robot_editor}"
+		}
+	},
+	"launch": {
+		"configurations": [ 
+			{
+				"name": "Current File (Python Debugger)",
+				"type": "debugpy",
+				"request": "launch",
+				"program": "${file}",
+				"console": "integratedTerminal",
+				"justMyCode": false
+			}		
+		]
+	}
+}

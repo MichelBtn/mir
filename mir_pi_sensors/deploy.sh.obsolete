@@ -1,0 +1,149 @@
+#!/bin/bash
+# ───────────────────────────────────────────────────────────────
+# Configuration
+# ───────────────────────────────────────────────────────────────
+PI_HOST="pi@pi2"
+PI_PATH="/home/pi/mir_sensors_servers"
+GREEN="\033[1;32m"
+YELLOW="\033[1;33m"
+RED="\033[1;31m"
+BLUE="\033[34m"
+LIGHT_BLUE="\033[1;34m"
+RESET="\033[0m"
+
+# ───────────────────────────────────────────────────────────────
+# Fonctions utilitaires
+# ───────────────────────────────────────────────────────────────
+info()    { echo -e "${LIGHT_BLUE}$1${RESET}"; }
+success() { echo -e "${GREEN}$1${RESET}"; }
+warn()    { echo -e "${YELLOW}$1${RESET}"; }
+error()   { echo -e "${RED}$1${RESET}"; }
+
+usage() {
+    echo "Usage: $0 [--camera] [--lidar] [--all]"
+    echo ""
+    echo "  --camera   Déploie uniquement camera_server"
+    echo "  --lidar    Déploie uniquement lidar_server"
+    echo "  --all      Déploie les deux services"
+    echo ""
+    exit 0
+}
+
+# ───────────────────────────────────────────────────────────────
+# Parsing des arguments
+# $# : nombre d'arguments restants, shift décale vers la gauche,
+# on lit donc toujours $1
+# ───────────────────────────────────────────────────────────────
+DEPLOY_CAMERA=false
+DEPLOY_LIDAR=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --camera)  DEPLOY_CAMERA=true ;;
+        --lidar)   DEPLOY_LIDAR=true  ;;
+        --all)     DEPLOY_CAMERA=true; DEPLOY_LIDAR=true ;;
+        --help|-h) usage ;;
+        *) error "Argument inconnu : '$1'"; usage ;;
+    esac
+    shift
+done
+
+SERVICES=""
+if [[ $DEPLOY_CAMERA == true ]]; then
+    SERVICES+=" camera"
+fi
+if [[ $DEPLOY_LIDAR == true ]]; then
+    SERVICES+=" lidar"
+fi
+info "Services à déployer :$SERVICES"
+echo ""
+
+# ───────────────────────────────────────────────────────────────
+# 1) Test de connexion SSH
+# ───────────────────────────────────────────────────────────────
+info "Test de connexion SSH vers $PI_HOST..."
+ssh -o ConnectTimeout=3 -o StrictHostKeyChecking=no -o BatchMode=no "$PI_HOST" "true" >/dev/null 2>&1
+ssh_status=$?
+if [[ $ssh_status -ne 0 ]]; then
+    error "Impossible de se connecter à $PI_HOST."
+    exit 1
+fi
+success "Connexion SSH OK."
+echo ""
+
+# ───────────────────────────────────────────────────────────────
+# 2) Synchronisation des fichiers
+# ───────────────────────────────────────────────────────────────
+info "Mise à jour des fichiers vers $PI_HOST..."
+ssh "$PI_HOST" mkdir -p "$PI_PATH"
+
+rsync -av --delete \
+    --chmod=+x \
+    --include='*.py' \
+    --include='camera_server.service' \
+    --include='run_camera_server.sh' \
+    --include='lidar_server.service' \
+    --include='run_lidar_server.sh' \
+    --include='setup_services.sh' \
+    --include='setup_python.sh' \
+    --include='requirements.in' \
+    --exclude='*' \
+    /home/michel/Documents/projects/python/vrobots/sensors_servers/ \
+    "$PI_HOST:$PI_PATH/"
+rsync_status=$?
+if [[ $rsync_status -ne 0 ]]; then
+    error "Echec mise à jour des fichiers (code $rsync_status)."
+    exit 1
+fi
+
+info "Mise à jour des fichiers de librairies vers $PI_HOST..."
+rsync -av --delete \
+    --chmod=+x \
+    --include='lidar.py' \
+    --exclude='*' \
+    /home/michel/Documents/projects/python/vrobots/robot_libs/devices/ \
+    "$PI_HOST:$PI_PATH/"
+rsync_status=$?
+if [[ $rsync_status -ne 0 ]]; then
+    error "Echec mise à jour des fichiers de librairie (code $rsync_status)."
+    exit 1
+fi
+success "Mise à jour des fichiers terminée."
+echo ""
+
+# ───────────────────────────────────────────────────────────────
+# 3) Setup environnement Python
+# ───────────────────────────────────────────────────────────────
+info "Setup environnement Python..."
+ssh "$PI_HOST" "$PI_PATH/setup_python.sh" "$PI_PATH"
+if [[ $? -ne 0 ]]; then
+    error "Echec du setup Python."
+    exit 1
+fi
+success "Environnement Python OK."
+echo ""
+
+# ───────────────────────────────────────────────────────────────
+# Fonction : déploiement d'un service systemd
+# ───────────────────────────────────────────────────────────────
+deploy_service() {
+    local service_name="$1"
+    info "Mise à jour du service ${service_name}.service..."
+    ssh "$PI_HOST" "$PI_PATH/setup_services.sh" "$service_name" "$PI_PATH"
+    local ssh_status=$?
+    if [[ $ssh_status -ne 0 ]]; then
+        error "Erreur lors de la mise à jour de ${service_name}.service (code $ssh_status)."
+        return 1
+    fi
+    success "Service ${service_name}.service déployé."
+    echo ""
+}
+
+# ───────────────────────────────────────────────────────────────
+# 4) Mise à jour du/des service(s) systemd
+# ───────────────────────────────────────────────────────────────
+$DEPLOY_CAMERA && deploy_service "camera_server" || true
+$DEPLOY_LIDAR  && deploy_service "lidar_server"  || true
+
+success "Déploiement terminé."
+echo ""

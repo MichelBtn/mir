@@ -1,0 +1,37 @@
+[Unit]
+Description=Camera Server Python Application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Dossier de travail
+WorkingDirectory=/home/pi/mir_sensors_servers
+
+# Commande de lancement
+ExecStartPre=/bin/chmod +x /home/pi/mir_sensors_servers/run_camera_server.sh
+ExecStart=/home/pi/mir_sensors_servers/run_camera_server.sh
+
+# Arrêt propre (SIGTERM)
+KillSignal=SIGTERM
+
+# Redémarrage automatique si crash
+Restart=on-failure
+RestartSec=2
+
+# Limite les redémarrages en boucle
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Utilisateur
+User=pi
+Group=pi
+
+# Environnement (si besoin)
+Environment="PYTHONUNBUFFERED=1"
+
+# Logs envoyés à journald
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,4 @@
+# mir/pyrefly.toml
+#permet à pyrefly de résoudre les dépendances
+conda-environment = "lerobot"
+

@@ -1,0 +1,4 @@
+Flask
+waitress
+numpy
+pyserial
