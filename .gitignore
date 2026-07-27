@@ -39,8 +39,14 @@ __pycache__/
 logs/
 tests/
 root_files/
-check_bare_imports.py
 .agent/
+node_modules/
+
+check_bare_imports.py
+package-lock.json
+package.json
+
+
 
 
 

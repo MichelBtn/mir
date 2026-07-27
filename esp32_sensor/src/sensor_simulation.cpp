@@ -30,8 +30,3 @@ const char* SensorSimulation::read_data() {
     sprintf(buf, "%" PRIu64 ";%.3f;%.3f", timestamp, omega, theta);
     return buf;
 }
-
-const char* SensorSimulation::get_data_schema() {
-    return "omega,-1,1;theta,-1,1";
-}
-

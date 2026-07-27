@@ -88,8 +88,4 @@ const char* SensorLidar::read_data() {
     return "lidar: use TCP data stream on port 5001";
 }
 
-const char* SensorLidar::get_data_schema() {
-    return "magic(2)+id(1)+seq(4)+ts(8)+count(2)+points[quality(1)+angle(2)+dist(2)]";
-}
-
 

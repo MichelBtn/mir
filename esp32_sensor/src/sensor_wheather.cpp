@@ -43,8 +43,3 @@ const char* SensorWheather::read_data() {
             timestamp, temperature, rel_humidity);
     return buf;
 }
-
-const char* SensorWheather::get_data_schema() {
-    return "temperature,-10,50;rel_humidity,0,100";
-}
-

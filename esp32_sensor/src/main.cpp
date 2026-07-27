@@ -43,6 +43,11 @@ char short_response[256];
 char arg_short_response[256];
 bool wifi_connected;
 
+enum class CommandSource : uint8_t {
+  SerialOnly,
+  Tcp,
+};
+
 void set_str_value(char* param, size_t param_size, const String& new_value) {
   if (new_value.isEmpty())
     return;
@@ -160,46 +165,47 @@ void save_configuration() {
 }
 
 void set_configuration(Stream& stream, const Command& command) {
-  try {
-    String arg_value;
-    if((arg_value = command.getArgValue("sensor_type")).length() > 0)  {
-      set_str_value(sensor_type, sizeof(sensor_type), arg_value);
-    }
-    if((arg_value = command.getArgValue("sensor_id")).length() > 0) {
-      set_str_value(sensor_id, sizeof(sensor_id), arg_value);
-    }
-    if((arg_value = command.getArgValue("ap1_ssid")).length() > 0) {
-      set_str_value(ap1_ssid, sizeof(ap1_ssid), arg_value);
-    }
-    if((arg_value = command.getArgValue("ap1_pwd")).length() > 0) {
-      set_str_value(ap1_pwd, sizeof(ap1_pwd), arg_value);
-    }
-    if((arg_value = command.getArgValue("ap1_ip")).length() > 0) {
-      set_str_value(ap1_ip, sizeof(ap1_ip), arg_value);
-    }
-    if((arg_value = command.getArgValue("ap2_ssid")).length() > 0) {
-      set_str_value(ap2_ssid, sizeof(ap2_ssid), arg_value);
-    }
-    if((arg_value = command.getArgValue("ap2_pwd")).length() > 0) {
-      set_str_value(ap2_pwd, sizeof(ap2_pwd), arg_value);
-    }
-    if((arg_value = command.getArgValue("ap2_ip")).length() > 0) {
-      set_str_value(ap2_ip, sizeof(ap2_ip), arg_value);
-    }
-    if((arg_value = command.getArgValue("wifi_timeout")).length() > 0) {
-      wifi_timeout = arg_value.toInt();
-    }
-    if((arg_value = command.getArgValue("loop_period")).length() > 0) {
-      int val = arg_value.toInt();
-      if(val > 10 && val < 1000)
-        loop_period = val;
-    }
-    save_configuration();
-    send_response(stream, "set_configuration", "status=success");
-  } catch (const std::exception& e) {
-    snprintf(arg_short_response, sizeof(arg_short_response), "status=error;error=%s", e.what());
-    send_response(stream, "configure", arg_short_response);
+  String arg_value;
+  if((arg_value = command.getArgValue("sensor_type")).length() > 0)  {
+    set_str_value(sensor_type, sizeof(sensor_type), arg_value);
   }
+  if((arg_value = command.getArgValue("sensor_id")).length() > 0) {
+    set_str_value(sensor_id, sizeof(sensor_id), arg_value);
+  }
+  if((arg_value = command.getArgValue("ap1_ip")).length() > 0) {
+    set_str_value(ap1_ip, sizeof(ap1_ip), arg_value);
+  }
+  if((arg_value = command.getArgValue("ap2_ip")).length() > 0) {
+    set_str_value(ap2_ip, sizeof(ap2_ip), arg_value);
+  }
+  if((arg_value = command.getArgValue("wifi_timeout")).length() > 0) {
+    wifi_timeout = arg_value.toInt();
+  }
+  if((arg_value = command.getArgValue("loop_period")).length() > 0) {
+    int val = arg_value.toInt();
+    if(val > 10 && val < 1000)
+      loop_period = val;
+  }
+  save_configuration();
+  send_response(stream, "set_configuration", "status=success");
+}
+
+void set_ap_configuration(Stream& stream, const Command& command) {
+  String arg_value;
+  if((arg_value = command.getArgValue("ap1_ssid")).length() > 0)  {
+    set_str_value(ap1_ssid, sizeof(ap1_ssid), arg_value);
+  }
+  if((arg_value = command.getArgValue("ap1_pwd")).length() > 0) {
+    set_str_value(ap1_pwd, sizeof(ap1_pwd), arg_value);
+  }
+  if((arg_value = command.getArgValue("ap2_ssid")).length() > 0) {
+    set_str_value(ap2_ssid, sizeof(ap2_ssid), arg_value);
+  }
+  if((arg_value = command.getArgValue("ap2_pwd")).length() > 0) {
+    set_str_value(ap2_pwd, sizeof(ap2_pwd), arg_value);
+  }
+  save_configuration();
+  send_response(stream, "set_ap_configuration", "status=success");
 }
 
 void reboot(Stream& stream) {
@@ -211,24 +217,38 @@ void reboot(Stream& stream) {
 const char* get_configuration() {
   snprintf(arg_short_response,
            sizeof(arg_short_response),
-           "sensor_type=%s;sensor_id=%s;ap1_ssid=%s;ap1_pwd=%s;ap1_ip=%s;ap2_ssid=%s;ap2_pwd=%s;ap2_ip=%s;wifi_timeout=%d;loop_period=%d;current_ip=%s",
-           sensor_type, sensor_id, ap1_ssid, ap1_pwd, ap1_ip, ap2_ssid, ap2_pwd, ap2_ip, wifi_timeout, loop_period, current_ip.toString().c_str());
+           "sensor_type=%s;sensor_id=%s;ap1_ip=%s;ap2_ip=%s;wifi_timeout=%d;loop_period=%d;current_ip=%s",
+           sensor_type, sensor_id, ap1_ip, ap2_ip, wifi_timeout, loop_period, current_ip.toString().c_str());
   return arg_short_response;
 }
 
-void dispatch_command(Stream& stream, const String& line) {
+const char* get_ap_configuration() {
+  snprintf(arg_short_response,
+           sizeof(arg_short_response),
+           "ap1_ssid=%s;ap1_pwd=%s;ap2_ssid=%s;ap2_pwd=%s",
+           ap1_ssid, ap1_pwd, ap2_ssid, ap2_pwd);
+  return arg_short_response;
+}
+
+void dispatch_command(Stream& stream, CommandSource source, const String& line) {
   command.parse(line);
   const String& cmd = command.getCommand();
+  if ((cmd == "set_ap_configuration" || cmd == "get_ap_configuration") && source != CommandSource::SerialOnly) {
+    send_response(stream, cmd.c_str(), "status=error;error=serial_only_command");
+    return;
+  }
   if (cmd == "get_data") {
     send_response(stream, "get_data", _sensor->read_data());
   } else if (cmd == "set_configuration") {
     set_configuration(stream, command);
+  } else if (cmd == "set_ap_configuration") {
+    set_ap_configuration(stream, command);
+  } else if (cmd == "get_ap_configuration") {
+    send_response(stream, "get_ap_configuration", get_ap_configuration());
   } else if (cmd == "get_configuration") {
     send_response(stream, "get_configuration", get_configuration());
-  } 
-  else if (cmd == "get_data_schema") {
-    send_response(stream, "get_data_schema", _sensor->get_data_schema());
-  } else if (cmd == "reboot") {
+  }
+  else if (cmd == "reboot") {
     reboot(stream);
   } else {
     send_response(stream, cmd.c_str(), "status=error;error=unknown_command");
@@ -252,12 +272,11 @@ void handle_tcp_data() {
   }
 }
 
-
 void handle_serial() {
   while (Serial.available()) {
     char c = Serial.read();
     if (c == '\n') {
-      dispatch_command(Serial, serial_buffer);
+      dispatch_command(Serial, CommandSource::SerialOnly, serial_buffer);
       serial_buffer = "";
     } else {
       serial_buffer += c;
@@ -275,7 +294,7 @@ void handle_tcp() {
     while (client.available()) {
       char c = client.read();
       if (c == '\n') {
-        dispatch_command(client, tcp_buffer);
+        dispatch_command(client, CommandSource::Tcp, tcp_buffer);
         tcp_buffer = "";
       } else {
         tcp_buffer += c;

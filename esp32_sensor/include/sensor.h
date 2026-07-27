@@ -25,7 +25,6 @@ public:
     uint8_t* get_data_frame(uint16_t& len);
     virtual bool        init()            = 0;
     virtual const char* read_data()       = 0;
-    virtual const char* get_data_schema() = 0;
 };
 
 #endif

@@ -26,7 +26,6 @@ public:
     void        _update_data()      override;
     bool        init()              override;
     const char* read_data()         override;
-    const char* get_data_schema()   override;
     static inline const char* sensor_type() { return "esp_lidar"; }
 };
 

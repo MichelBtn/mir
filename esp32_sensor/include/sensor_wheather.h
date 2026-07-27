@@ -17,7 +17,6 @@ class SensorWheather : public Sensor {
     bool init() override;
     bool _add_frame_data(int& pos) override;
     const char* read_data() override;
-    const char* get_data_schema() override;
     static inline const char* sensor_type() { return "esp_wheather"; }       
 };
 
