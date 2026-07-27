@@ -1,4 +1,6 @@
-##### 27/07/2026. correctif script de déploiement pi (mir_pi_sensors/deploy.sh)
+##### 27/072026. ESP32 : configurer identifiants de points d'accès uniquement sur le port série.
+
+##### 25/07/2026. correctif script de déploiement pi (mir_pi_sensors/deploy.sh)
 le fichier setup_services.sh n'était pas copié
 le fichier requirements.in n'était pas copié
 
