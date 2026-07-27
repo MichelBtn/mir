@@ -1,8 +1,7 @@
-from mir_robot_editor.view_model_base import ViewModelBase
 from lerobot.motors.feetech import FeetechMotorsBus
 from PySide6 import QtCore
 from mir_devices.mir_feetech_motor_bus import sts3215_registers, Register
-
+from mir_utils.ui.view_model_base import ViewModelBase
 
 class RegistersViewModel(ViewModelBase):
 

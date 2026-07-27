@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QLayout
 )
 from mir_devices.mir_device import DeviceAction
-from mir_robot_editor.view_base import ViewBase
+from mir_utils.ui.view_base import ViewBase
 from mir_utils.ui.widgets import DoubleLineEdit
 
 class MotorBlock(QFrame):

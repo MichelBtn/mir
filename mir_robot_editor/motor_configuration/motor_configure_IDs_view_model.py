@@ -1,10 +1,11 @@
 from typing_extensions import override
 from mir_utils.ui.dialogs import IDialogProvider
-from mir_robot_editor.view_model_base import ViewModelBase
 from PySide6.QtCore import Signal, QTimer
 from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirMotorBusConfiguration
 from mir_utils.concurrency import BackgroundWorker
 from dataclasses import dataclass
+from mir_utils.ui.view_model_base import ViewModelBase
+from mir_utils.ui.dialogs import IDialogProvider
 
 @dataclass
 class MotorData():

@@ -1,12 +1,12 @@
 from PySide6.QtCore import Signal
-from mir_utils.ui.dialogs import IDialogProvider
 from mir_robot.mir_robot import mirRobotConfig, mirRobot
 from mir_robot_editor.motor_configuration.motor_configuration_view_model import MotorConfigurationViewModel
 from mir_robot_editor.scan_devices_view_model import ScanDevicesViewModel
 from mir_robot_editor.robot_monitor_view_model import RobotMonitorViewModel
 from mir_robot_editor.edit_configuration_view_model import EditConfigurationViewModel
 from mir_utils.ui.dialogs import DialogResult
-from mir_robot_editor.view_model_base import ViewModelBase, VMAction
+from mir_utils.ui.view_model_base import VMAction, ViewModelBase
+from mir_utils.ui.dialogs import IDialogProvider
 from mir_utils.concurrency import BackgroundWorker
 
 from enum import Enum, auto

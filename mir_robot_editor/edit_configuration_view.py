@@ -12,7 +12,7 @@ from pathlib import Path
 from mir_utils.ui.widgets import DialogBase, IconFinder, ToolButton
 from mir_utils.ui.code_editor import CodeEditorWidget
 from mir_robot_editor.edit_configuration_view_model import EditConfigurationViewModel, EditConfigurationVMAction
-from mir_robot_editor.view_base import ViewBase
+from mir_utils.ui.view_base import ViewBase
 from mir_devices.mir_feetech_motor_bus import mirMotorBusConfiguration, mirMotor
 
 class EditConfigurationView(DialogBase, ViewBase[EditConfigurationViewModel, EditConfigurationVMAction]):

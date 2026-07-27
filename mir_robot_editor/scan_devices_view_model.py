@@ -6,15 +6,14 @@ import time
 from mir_devices.mir_sensor import mirSensorConfiguration
 from mir_devices.mir_device import ObservableProperty
 from mir_devices.mir_feetech_motor_bus import mirMotorBusConfiguration
-from mir_utils.ui.dialogs import IDialogProvider
-from mir_robot_editor.view_model_base import ViewModelBase
 from mir_robot.mir_robot_config import mirRobotConfig
 from mir_utils.concurrency import BackgroundWorker
-from mir_robot_editor.view_model_base import VMAction
 from mir_robot_editor.sensor_configuration_view_model import SensorConfigurationViewModel
 from mir_devices.mir_devices_factory import reset_sensors, DefaultDevicesFactory
 from mir_robot_editor.motor_configuration.motor_configure_IDs_view_model import MotorConfigureIDsViewModel
 from mir_devices.discovery_scanner import DiscoveryScanner, DiscoveryScannerResult
+from mir_utils.ui.view_model_base import VMAction, ViewModelBase
+from mir_utils.ui.dialogs import IDialogProvider
 
 class DiscoveredDeviceViewModel():
     def __init__(self, key: str, device_cfg: mirSensorConfiguration|mirMotorBusConfiguration, warning: str=""):

@@ -222,11 +222,7 @@ class EspSensor(mirSensor):
             if config is None:
                 return {}
             sensor_type = config["sensor_type"]
-            ap1_ssid = config["ap1_ssid"]
-            ap1_pwd = config["ap1_pwd"]
             ap1_ip = config["ap1_ip"]
-            ap2_ssid = config["ap2_ssid"]
-            ap2_pwd = config["ap2_pwd"]
             ap2_ip = config["ap2_ip"]
             wifi_timeout = config["wifi_timeout"]
             loop_period = config["loop_period"]
@@ -251,39 +247,11 @@ class EspSensor(mirSensor):
                     current_value=current_ip,
                     read_only=True
                 ),
-                "ap1_ssid": SensorProperty(
-                    label="AP1 SSID",
-                    tooltip="SSID du point d'accès préféré",
-                    property_type="str",
-                    current_value=ap1_ssid,
-                    requires_reboot=True
-                ),
-                "ap1_pwd" : SensorProperty(
-                    label="AP1 pass",
-                    tooltip="mot de passe du point d'accès préféré",
-                    property_type="str",
-                    current_value=ap1_pwd,
-                    requires_reboot=True
-                ),
                 "ap1_ip" : SensorProperty(
                     label="AP1 IP",
                     tooltip="adresse IP sur le point d'accès préféré (auto = adresse fournie par le point d'accès)",
                     property_type="str",
                     current_value=ap1_ip,
-                    requires_reboot=True
-                ),
-                "ap2_ssid" : SensorProperty(
-                    label="AP2 SSID",
-                    tooltip="SSID du point d'accès secondaire",
-                    property_type="str",
-                    current_value=ap2_ssid,
-                    requires_reboot=True
-                ),
-                "ap2_pwd" : SensorProperty(
-                    label="AP2 pass",
-                    tooltip="mot de passe du point d'accès secondaire",
-                    property_type="str",
-                    current_value=ap2_pwd,
                     requires_reboot=True
                 ),
                 "ap2_ip" : SensorProperty(

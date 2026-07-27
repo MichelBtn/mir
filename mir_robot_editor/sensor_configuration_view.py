@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QSize
 from loguru import logger
-from mir_robot_editor.view_base import ViewBase
+from mir_utils.ui.view_base import ViewBase
 from mir_robot_editor.sensor_configuration_view_model import SensorConfigurationViewModel
 from mir_utils.ui.widgets import DialogBase
 from mir_devices.mir_sensor import SensorProperty

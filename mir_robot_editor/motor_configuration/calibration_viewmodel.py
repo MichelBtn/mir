@@ -1,11 +1,11 @@
-from mir_robot_editor.view_model_base import ViewModelBase
 from PySide6.QtCore import QTimer, Signal
 from dataclasses import dataclass
 from enum import Enum
-from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus
-from mir_utils.ui.dialogs import IDialogProvider
 from lerobot.motors.feetech import OperatingMode
 from contextlib import contextmanager
+from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus
+from mir_utils.ui.view_model_base import ViewModelBase
+from mir_utils.ui.dialogs import IDialogProvider
 
 @dataclass
 class CalibrationMotorData():

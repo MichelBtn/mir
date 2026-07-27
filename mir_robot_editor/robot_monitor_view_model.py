@@ -7,12 +7,11 @@ from threading import Lock
 from PySide6.QtCore import Signal
 from mir_devices.mir_device import DeviceAction
 from mir_utils.metrics import SimpleMovingAverage, Stats
-from mir_robot_editor.view_model_base import VMAction
 from mir_utils.period_waiters import PeriodWaiterExact
 from mir_utils.concurrency import BackgroundWorker
-from mir_robot_editor.view_model_base import ViewModelBase
 from mir_robot.mir_robot import mirRobot
 from mir_devices.mir_device import ActionValue
+from mir_utils.ui.view_model_base import VMAction, ViewModelBase
 
 class RobotMonitorVMAction(Enum):
     APPLY = auto()

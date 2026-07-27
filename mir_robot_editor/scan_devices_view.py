@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 )
 from mir_robot_editor.scan_devices_view_model import ScanDevicesViewModel, DiscoveredDeviceViewModel, ScanDevicesVMAction
 from mir_utils.ui.widgets import DialogBase, ToolButton
-from mir_robot_editor.view_base import ViewBase
+from mir_utils.ui.view_base import ViewBase
 from mir_robot_editor.sensor_configuration_view import SensorConfigurationView
 from mir_robot_editor.scan_devices_view_model import DiscoveredMotorBusViewModel, DiscoveredSensorViewModel
 from mir_robot_editor.motor_configuration.motor_configure_IDs_view import MotorConfigureIDsView

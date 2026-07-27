@@ -8,7 +8,7 @@ from mir_robot_editor.robot_monitor_view_model import (
                                                       RobotMonitorViewModel, 
                                                       RobotMonitorVMAction)
 from mir_robot_editor.observations_widget import ObservationsWidget
-from mir_robot_editor.view_base import ViewBase
+from mir_utils.ui.view_base import ViewBase
 from mir_robot_editor.actions_widget import MotorActionWidget
 from mir_utils.ui.widgets import ToolButton, StateSavedView
 from mir_devices.mir_device import ( ObservableProperty, 

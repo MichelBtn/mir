@@ -6,6 +6,7 @@
 		{ "path": "mir_utils" },
 		{ "path": "mir_user_scripts" },
 		{ "path": "mir_pi_sensors" },
+		{ "path": "mir_esp_deploy" },
 		{ "path": "root_files" },
 		{ "path": "tests" }
 	],

@@ -2,7 +2,7 @@ from mir_utils.ui.widgets import IconFinder
 from typing import Generic, TypeVar
 from PySide6.QtGui import QAction, QKeySequence
 from typing import Callable
-from mir_robot_editor.view_model_base import ViewModelBase, TAction
+from mir_utils.ui.view_model_base import ViewModelBase, TAction
 from PySide6.QtWidgets import QToolBar
 
 TViewModel = TypeVar("TViewModel", bound=ViewModelBase)

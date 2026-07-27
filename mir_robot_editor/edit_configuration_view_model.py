@@ -1,5 +1,5 @@
 
-from mir_robot_editor.view_model_base import ViewModelBase, VMAction
+from mir_utils.ui.view_model_base import VMAction, ViewModelBase
 from mir_robot.mir_robot_config import mirRobotConfig
 from enum import Enum, auto
 from PySide6.QtCore import Signal

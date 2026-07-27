@@ -6,8 +6,8 @@ from mir_robot_editor.motor_configuration.motor_configuration_view_model import 
 from mir_robot_editor.scan_devices_view import ScanDevicesView
 from mir_robot_editor.main_viewmodel import MainViewModel, MainVMAction, MainViewModelState
 from mir_robot_editor.robot_monitor_view import RobotMonitorView
+from mir_utils.ui.view_base import ViewBase
 
-from .view_base import ViewBase
 
 class MainView(MainWindowBase, ViewBase[MainViewModel, MainVMAction]):
     def __init__(self, view_model: MainViewModel):

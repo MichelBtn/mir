@@ -1,11 +1,12 @@
-from mir_robot_editor.view_model_base import VMAction
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtWidgets import QLabel, QPushButton, QGridLayout, QVBoxLayout, QLineEdit, QHBoxLayout, QToolButton
 from mir_robot_editor.motor_configuration.registers_view import RegistersView
 from mir_robot_editor.motor_configuration.calibration_view import CalibrationView
 from mir_robot_editor.motor_configuration.motor_configuration_view_model import MotorConfigurationViewModel, MotorConfigurationViewModel_MotorData
 from mir_utils.ui.widgets import stylesheets, DialogBase
-from mir_robot_editor.view_base import ViewBase
+from mir_utils.ui.view_model_base import VMAction
+from mir_utils.ui.view_base import ViewBase
+
 
 class MotorConfigurationView(DialogBase, ViewBase[MotorConfigurationViewModel, VMAction]):
    

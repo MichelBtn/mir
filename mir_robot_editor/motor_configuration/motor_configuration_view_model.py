@@ -7,7 +7,8 @@ from mir_robot_editor.motor_configuration.registers_viewmodel import RegistersVi
 from mir_robot_editor.motor_configuration.calibration_viewmodel import CalibrationViewModel
 from mir_utils.ui.dialogs import IDialogProvider
 from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirMotor
-from mir_robot_editor.view_model_base import ViewModelBase
+from mir_utils.ui.view_model_base import ViewModelBase
+
 from mir_robot.mir_robot_config import mirRobotConfig
 
 @dataclass

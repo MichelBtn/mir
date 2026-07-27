@@ -2,10 +2,10 @@ from PySide6.QtCore import Signal
 from typing_extensions import override
 from loguru import logger
 from typing import Any
-from mir_utils.ui.dialogs import IDialogProvider
 from mir_devices.mir_devices_factory import DefaultSensorsFactory
 from mir_devices.mir_sensor import mirSensorConfiguration, SensorProperty, mirSensor
-from mir_robot_editor.view_model_base import ViewModelBase
+from mir_utils.ui.view_model_base import ViewModelBase
+from mir_utils.ui.dialogs import IDialogProvider
 
 class SensorConfigurationViewModel(ViewModelBase):
     close_required = Signal()
