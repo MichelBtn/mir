@@ -41,7 +41,6 @@ tests/
 root_files/
 .agent/
 node_modules/
-mir_esp_deploy/
 
 check_bare_imports.py
 package-lock.json
