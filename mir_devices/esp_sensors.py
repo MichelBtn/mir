@@ -8,7 +8,7 @@ from loguru import logger
 from typing import Any, cast
 import numpy as np
 import matplotlib.pyplot as plt
-from mir_devices.communication_ports import TcpPort
+from mir_devices.communication_ports import TcpPort, SerialPort
 from mir_devices.mir_sensor import (EspSensorConfiguration, 
                                     EspSensorLidarConfiguration, 
                                     EspSensorSimulationConfiguration, 
@@ -42,6 +42,7 @@ class EspSensor(mirSensor):
         self._worker = BackgroundWorker()
         self._data_locker = Lock()
         self._disconnect_forced_stop_loop = False
+        self._data_socket:socket.socket|None = None
     
     def send_action(self, actions:dict[str, ActionValue])->dict[str, ActionValue]:
         return {}
@@ -93,6 +94,11 @@ class EspSensor(mirSensor):
         self._worker.run(self._loop, self._on_loop_finished, self._on_loop_failed, self)
         self._is_connected = True
 
+    def mir_connect_serial(self, port:str, baudrate:int=115200):
+        self._commPort = SerialPort(port, baudrate, disable_rts_dtr=False)
+        self._commPort.open()
+        self._is_connected = True
+
     def read_exactly(self, n):
         buf = b''
         while len(buf) < n:
@@ -108,11 +114,14 @@ class EspSensor(mirSensor):
     def _on_loop_finished(self, result:None):
         pass
     
-    @abstractmethod
-    def _raw_data_size(self, count: int) -> int: ...
+    def _raw_data_size(self, count: int) -> int:
+        return 0
 
-    @abstractmethod
-    def _parse_data(self, data: bytes, count: int, timestamp: float) -> None: ...
+    def _parse_data(self, data: bytes, count: int, timestamp: float) -> None:
+        pass
+    
+    def get_observables(self) -> dict[str, ObservableProperty]:
+        return {}
 
     def _loop(self) -> None:
         self._disconnect_forced_stop_loop = False
@@ -194,6 +203,21 @@ class EspSensor(mirSensor):
         except Exception as e:
             logger.error(f"échec commande {command_and_args} : {e})")
         return None
+
+    def read_ap_configuration(self) -> dict[str, str] | None:
+        if not isinstance(self._commPort, SerialPort):
+            raise RuntimeError("Seul le port série est autorisé pour la configuration des identifiants de point d'accès")
+        response = self._send_command("get_ap_configuration")
+        if response is None:
+            return None
+        return self._response_to_dict(response)
+    
+    def write_ap_configuration(self, configuration: dict) -> bool:
+        str = self._dict_to_str(configuration) + ";"
+        response = self._send_command(f"set_ap_configuration {str}")    
+        if response != "status=success":
+            logger.warning(f"write_ap_configuration({configuration}) a retourné une erreur  : {response}")
+        return response == "status=success"
 
     def read_configuration(self) -> dict[str, str] | None:
         response = self._send_command("get_configuration")
