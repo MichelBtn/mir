@@ -10,7 +10,6 @@ from mir_esp_deploy.esp32_deploy_view_model import Esp32DeployViewModel
 
 enable_logging()
 
-
 dialogProvider = QtDialogProvider()
 
 
@@ -38,9 +37,7 @@ if __name__ == "__main__":
     window = Esp32DeployView(view_model)
     dialogProvider.setParent(window)
 
-    # Le view_model n'est pas utilisé via 'with vm:', donc _exit_context
-    # ne sera jamais appelé. On branche directement le shutdown du worker
-    # sur la fermeture de l'application pour éviter une fuite de thread.
+    # Nettoyage du BackgroundWorker à la fermeture
     app.aboutToQuit.connect(lambda: view_model._worker.shutdown(wait=True))
 
     window.show()

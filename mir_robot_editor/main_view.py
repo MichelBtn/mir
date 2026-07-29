@@ -68,7 +68,6 @@ class MainView(MainWindowBase, ViewBase[MainViewModel, MainVMAction]):
             self.robot_monitor_view.save_state(self)
             return super().closeEvent(event)
         event.ignore()
-
     
     def on_quit(self):
         self._view_model.quit()

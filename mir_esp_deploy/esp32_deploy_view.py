@@ -1,8 +1,6 @@
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
-    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -10,74 +8,156 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QSizePolicy,
-    QToolButton,
     QVBoxLayout,
     QWidget,
+    QToolButton
 )
+from PySide6.QtCore import Qt, Signal
 from mir_utils.ui.view_base import ViewBase
 from mir_utils.ui.widgets import MainWindowBase
-from mir_esp_deploy.esp32_deploy_view_model import (
-    DeployState,
-    DeployVMAction,
-    Esp32DeployViewModel,
-)
+from mir_esp_deploy.esp32_deploy_view_model import Esp32DeployViewModel, DeployVMAction
 
 
+class PasswordEdit(QWidget):
+    textChanged = Signal(str)
+    returnPressed = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self._line_edit = QLineEdit(self)
+        self._line_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self._line_edit.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed
+        )
+        
+        self._toggle_button = QToolButton(self)
+        self._toggle_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._toggle_button.setCheckable(True)
+        self._toggle_button.setChecked(False)
+        self._toggle_button.setToolTip("Afficher le mot de passe")
+        self._toggle_button.setIcon(ViewBase.find_icon("eye_off"))
+        self._toggle_button.setFixedWidth(32)          # largeur fixe → taille stable
+        self._toggle_button.setSizePolicy(
+            QSizePolicy.Policy.Fixed,
+            QSizePolicy.Policy.Preferred
+        )
+        # Optionnel : taille d’icône si vous utilisez des QIcon
+        # self._toggle_button.setIconSize(QSize(16, 16))
+
+        self._toggle_button.toggled.connect(self._on_toggled)
+        self._line_edit.textChanged.connect(self.textChanged.emit)
+        self._line_edit.returnPressed.connect(self.returnPressed.emit)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self._line_edit)
+        layout.addWidget(self._toggle_button)
+
+        self.setStyleSheet("""
+            PasswordEdit QLineEdit {
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+            PasswordEdit QToolButton {
+                border-top-left-radius: 0;
+                border-bottom-left-radius: 0;
+                padding: 0;
+            }
+        """)
+
+    def _on_toggled(self, checked: bool):
+        if checked:
+            self._line_edit.setEchoMode(QLineEdit.EchoMode.Normal)
+            self._toggle_button.setToolTip("Masquer le mot de passe")
+            self._toggle_button.setIcon(ViewBase.find_icon("eye_on"))
+        else:
+            self._line_edit.setEchoMode(QLineEdit.EchoMode.Password)
+            self._toggle_button.setToolTip("Afficher le mot de passe")
+            self._toggle_button.setIcon(ViewBase.find_icon("eye_off"))
+
+    # ------------------------------------------------------------------
+    # API publique
+    # ------------------------------------------------------------------
+    def text(self) -> str:
+        return self._line_edit.text()
+
+    def setText(self, text: str):
+        self._line_edit.setText(text)
+
+    def clear(self):
+        self._line_edit.clear()
+
+    def setPlaceholderText(self, text: str):
+        self._line_edit.setPlaceholderText(text)
+
+    def placeholderText(self) -> str:
+        return self._line_edit.placeholderText()
+
+    def setMaxLength(self, length: int):
+        self._line_edit.setMaxLength(length)
+
+    def setReadOnly(self, readonly: bool):
+        self._line_edit.setReadOnly(readonly)
+
+    def isReadOnly(self) -> bool:
+        return self._line_edit.isReadOnly()
+
+    def setEchoMode(self, mode: QLineEdit.EchoMode):
+        self._line_edit.setEchoMode(mode)
+        self._toggle_button.setChecked(mode == QLineEdit.EchoMode.Normal)
+
+    def echoMode(self) -> QLineEdit.EchoMode:
+        return self._line_edit.echoMode()
+
+    def lineEdit(self) -> QLineEdit:
+        return self._line_edit
+
+    def setFocus(self, reason=Qt.FocusReason.OtherFocusReason):
+        self._line_edit.setFocus(reason)
+        
 class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAction]):
-    """
-    Vue principale du déployeur ESP32.
-
-    Layout :
-     ─ Sélection port + firmware path
-     ─ 4 champs SSID / PWD des points d'accès AP1 / AP2
-     ─ 3 boutons : Flasher, Lire, Appliquer
-     ─ Log esptool (lecture seule)
-     ─ Status bar (état global)
-    """
+    """Vue de l'outil de déploiement ESP32."""
 
     def __init__(self, view_model: Esp32DeployViewModel):
-        # MainWindowBase attend (parent, default_width, default_height, name=None).
-        # ViewBase stocke `self._view_model`, mais avec l'ordre de bases
-        # (MainWindowBase, ViewBase[...]) le constructeur de ViewBase peut ne
-        # pas être appelé via le super() chain selon l'implémentation du binding
-        # Qt ; on assigne donc explicitement pour rester robuste.
         super().__init__(
             parent=None,
-            default_width=640,
-            default_height=560,
+            default_width=580,
+            default_height=620,
             view_model=view_model,
         )
+        self._can_close = True
         self._view_model: Esp32DeployViewModel = view_model
         self.setWindowTitle("Mir ESP Déploiement")
         self._build_ui()
 
-        # --- Liaisons signaux du view_model ---
+        # Liaisons signaux VM → Vue
         self._view_model.ports_changed.connect(self._on_ports_changed)
         self._view_model.config_loaded.connect(self._on_config_loaded)
         self._view_model.status_changed.connect(self._on_status_changed)
-        self._view_model.flash_finished.connect(self._on_flash_finished)
-        self._view_model.state_changed.connect(self._on_state_changed)
+        self._view_model.flash_output_received.connect(self._on_flash_output_received)
         self._view_model.busy_changed.connect(self._on_busy_changed)
 
-        # --- Liaisons inputs utilisateur -> view_model ---
+        # Liaisons Vue → VM
         self._port_combo.currentIndexChanged.connect(self._on_port_changed)
         self._firmware_edit.textChanged.connect(self._on_firmware_path_changed)
 
-        # Premier peuplement des ports (le VM scan automatiquement à l'init)
+        # Initialisation
         self._on_ports_changed(self._view_model.get_available_ports())
         self._firmware_edit.setText(self._view_model.get_default_firmware_path())
 
-    # -------------------------------------------------------------- construction
+    # --------------------------------------------------------------- construction
     def _build_ui(self):
         central = QWidget(self)
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
 
-        # Bloc 1 : port série + firmware ____________________________________
+        # --- Port série + firmware ---
         target_group = QGroupBox("Cible")
         target_form = QFormLayout(target_group)
 
-        # Port série : combo + bouton Rafraîchir
         port_row = QWidget()
         port_layout = QHBoxLayout(port_row)
         port_layout.setContentsMargins(0, 0, 0, 0)
@@ -86,102 +166,85 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         self._port_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         port_layout.addWidget(self._port_combo, 1)
 
-        self._refresh_action = self._make_action(
-            DeployVMAction.REFRESH_PORTS,
-            self._view_model.scan_ports,
-            "",
-            toolbar=None,
+        self._refresh_btn = QPushButton("Rafraîchir")
+        self._refresh_btn.clicked.connect(self._view_model.scan_ports)
+        self._view_model.get_action(DeployVMAction.REFRESH_PORTS).action_state_changed.connect(
+            self._refresh_btn.setEnabled
         )
-        self._refresh_btn = QToolButton()
-        self._refresh_btn.setDefaultAction(self._refresh_action)
-        self._refresh_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        port_layout.addWidget(self._refresh_btn, 0)
+        port_layout.addWidget(self._refresh_btn)
         target_form.addRow("Port série", port_row)
 
-        # Chemin firmware
         self._firmware_edit = QLineEdit()
         self._firmware_edit.setPlaceholderText("Chemin du firmware (.bin)")
         target_form.addRow("Firmware", self._firmware_edit)
 
-        # Bloc 2 : AP1 / AP2 SSID + PWD ______________________________________
-        wifi_group = QGroupBox("Identifiants Wi-Fi (AP1 / AP2)")
+        # --- Identifiants Wi-Fi ---
+        wifi_group = QGroupBox("Identifiants Wi-Fi")
         wifi_form = QFormLayout(wifi_group)
 
         self._ap1_ssid_edit = QLineEdit()
         self._ap1_ssid_edit.setPlaceholderText("SSID du point d'accès primaire")
         wifi_form.addRow("AP1 SSID", self._ap1_ssid_edit)
-        self._ap1_pwd_edit = QLineEdit()
-        self._ap1_pwd_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self._ap1_pwd_edit.setPlaceholderText("Mot de passe du point d'accès primaire")
+
+        self._ap1_pwd_edit = PasswordEdit()
+        self._ap1_pwd_edit.setPlaceholderText("Mot de passe AP1")
         wifi_form.addRow("AP1 PWD", self._ap1_pwd_edit)
 
-        sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setFrameShadow(QFrame.Shadow.Sunken)
-        wifi_form.addRow(sep)
+        self._btn_swap_ap = QToolButton()
+        self._btn_swap_ap.setIcon(ViewBase.find_icon("swap"))
+        self._btn_swap_ap.clicked.connect(self._on_swap_ap_clicked)
+        wifi_form.addRow(self._btn_swap_ap)
 
         self._ap2_ssid_edit = QLineEdit()
-        self._ap2_ssid_edit.setPlaceholderText("SSID du point d'accès secondaire (optionnel)")
+        self._ap2_ssid_edit.setPlaceholderText("SSID du point d'accès secondaire")
         wifi_form.addRow("AP2 SSID", self._ap2_ssid_edit)
-        self._ap2_pwd_edit = QLineEdit()
-        self._ap2_pwd_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self._ap2_pwd_edit.setPlaceholderText("Mot de passe du point d'accès secondaire")
+
+        self._ap2_pwd_edit = PasswordEdit()
+        self._ap2_pwd_edit.setPlaceholderText("Mot de passe AP2")
         wifi_form.addRow("AP2 PWD", self._ap2_pwd_edit)
 
-        # Bloc 3 : boutons d'action __________________________________________
+        # --- Boutons d'action ---
         actions_group = QGroupBox("Actions")
         actions_layout = QHBoxLayout(actions_group)
 
-        # Bouton "Flasher le firmware"
-        self._flash_action = self._make_action(
-            DeployVMAction.FLASH,
-            self._on_flash_clicked,
-            "",
-            toolbar=None,
+        self._flash_btn = QPushButton("Flasher le firmware")
+        self._flash_btn.clicked.connect(self._on_flash_clicked)
+        self._view_model.get_action(DeployVMAction.FLASH).action_state_changed.connect(
+            self._flash_btn.setEnabled
         )
-        self._flash_btn = QToolButton()
-        self._flash_btn.setDefaultAction(self._flash_action)
-        self._flash_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self._flash_btn.setEnabled(False)
         actions_layout.addWidget(self._flash_btn)
 
-        # Bouton "Lire" : ESP -> champs
-        self._read_action = self._make_action(
-            DeployVMAction.READ_CFG,
-            self._on_read_clicked,
-            "",
-            toolbar=None,
+        self._read_btn = QPushButton("Lire config Wi-Fi")
+        self._read_btn.clicked.connect(self._on_read_clicked)
+        self._view_model.get_action(DeployVMAction.READ_CFG).action_state_changed.connect(
+            self._read_btn.setEnabled
         )
-        self._read_btn = QToolButton()
-        self._read_btn.setDefaultAction(self._read_action)
-        self._read_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self._read_btn.setEnabled(False)
         actions_layout.addWidget(self._read_btn)
 
-        # Bouton "Appliquer" : champs -> ESP
-        self._write_action = self._make_action(
-            DeployVMAction.WRITE_CFG,
-            self._on_write_clicked,
-            "",
-            toolbar=None,
+        self._write_btn = QPushButton("Appliquer config Wi-Fi")
+        self._write_btn.clicked.connect(self._on_write_clicked)
+        self._view_model.get_action(DeployVMAction.WRITE_CFG).action_state_changed.connect(
+            self._write_btn.setEnabled
         )
-        self._write_btn = QToolButton()
-        self._write_btn.setDefaultAction(self._write_action)
-        self._write_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self._write_btn.setEnabled(False)
         actions_layout.addWidget(self._write_btn)
 
-        # Bloc 4 : log esptool _______________________________________________
+        # --- Log esptool ---
         log_group = QGroupBox("Log esptool")
         log_layout = QVBoxLayout(log_group)
         self._log_edit = QPlainTextEdit()
         self._log_edit.setReadOnly(True)
         self._log_edit.setPlaceholderText(
-            "Aucune opération lancée. La sortie de esptool apparaîtra ici."
+            "La sortie de esptool apparaîtra ici."
         )
         font = self._log_edit.font()
         font.setFamily("Monospace")
         self._log_edit.setFont(font)
         log_layout.addWidget(self._log_edit)
 
-        # Assemblage vertical ________________________________________________
+        # Assemblage
         root.addWidget(target_group)
         root.addWidget(wifi_group)
         root.addWidget(actions_group)
@@ -191,30 +254,37 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         self._status_label = QLabel("Prêt")
         self.statusBar().addWidget(self._status_label)
 
-    # ----------------------------------------------------------- call helpers vm
-    def _collect_ap_config(self) -> dict[str, str]:
-        def s(edit: QLineEdit) -> str:
-            return edit.text().strip()
+    def closeEvent(self, event):
+        if self._can_close:
+            return super().closeEvent(event)
+        event.ignore()
 
+    # ------------------------------------------------------------ collecte config
+    def _collect_ap_config(self) -> dict[str, str]:
         return {
-            "AP1_SSID": s(self._ap1_ssid_edit),
-            "AP1_PWD": s(self._ap1_pwd_edit),
-            "AP2_SSID": s(self._ap2_ssid_edit),
-            "AP2_PWD": s(self._ap2_pwd_edit),
+            "ap1_ssid": self._ap1_ssid_edit.text().strip(),
+            "ap1_pwd": self._ap1_pwd_edit.text().strip(),
+            "ap2_ssid": self._ap2_ssid_edit.text().strip(),
+            "ap2_pwd": self._ap2_pwd_edit.text().strip(),
         }
 
-    # ------------------------------------------------------------------ handlers
+    # ------------------------------------------------------------------- handlers
+    def _on_swap_ap_clicked(self):
+        ap1ssid = self._ap1_ssid_edit.text()
+        ap1pwd = self._ap1_pwd_edit.text()
+        self._ap1_ssid_edit.setText(self._ap2_ssid_edit.text())
+        self._ap1_pwd_edit.setText(self._ap2_pwd_edit.text())
+        self._ap2_ssid_edit.setText(ap1ssid)
+        self._ap2_pwd_edit.setText(ap1pwd)
+
     def _on_flash_clicked(self):
         self._log_edit.clear()
-        self._status_label.setText("Flash en cours...")
         self._view_model.flash_firmware()
 
     def _on_read_clicked(self):
-        self._status_label.setText("Lecture de la configuration Wi-Fi...")
         self._view_model.read_ap_configuration()
 
     def _on_write_clicked(self):
-        self._status_label.setText("Envoi de la configuration Wi-Fi...")
         self._view_model.write_ap_configuration(self._collect_ap_config())
 
     def _on_port_changed(self, _index: int):
@@ -234,35 +304,28 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         else:
             self._port_combo.addItem("(aucun port série détecté)")
             self._view_model.set_selected_port("")
-            self._status_label.setText("Aucun port série détecté — branchez l'ESP32 puis rafraîchissez (F5)")
+            self._status_label.setText("Aucun port série détecté")
         self._port_combo.blockSignals(False)
 
     def _on_config_loaded(self, config: dict[str, str]):
-        self._ap1_ssid_edit.setText(config.get("AP1_SSID", ""))
-        self._ap1_pwd_edit.setText(config.get("AP1_PWD", ""))
-        self._ap2_ssid_edit.setText(config.get("AP2_SSID", ""))
-        self._ap2_pwd_edit.setText(config.get("AP2_PWD", ""))
+        self._ap1_ssid_edit.setText(config.get("ap1_ssid", ""))
+        self._ap1_pwd_edit.setText(config.get("ap1_pwd", ""))
+        self._ap2_ssid_edit.setText(config.get("ap2_ssid", ""))
+        self._ap2_pwd_edit.setText(config.get("ap2_pwd", ""))
 
-    def _on_flash_finished(self, ok: bool, output: str):
-        # Affiche toute la sortie capturée (stdout + stderr) ; utile même en cas
-        # de succès (vérification post-flash) et indispensable en cas d'erreur.
+    def _on_flash_output_received(self, output: str):
         self._log_edit.appendPlainText(output)
 
     def _on_status_changed(self, status: str):
         self._status_label.setText(status)
 
-    def _on_state_changed(self, _state: DeployState):
-        # Effet visuel léger pour différencier l'état "occupé".
-        if _state == DeployState.BUSY:
-            self._log_edit.setStyleSheet("QPlainTextEdit { border: 2px solid #c79100; }")
-        else:
-            self._log_edit.setStyleSheet("")
-
     def _on_busy_changed(self, busy: bool):
-        # Blocage "radical" des champs pour éviter les éditions en cours d'opération.
         self._firmware_edit.setEnabled(not busy)
         self._port_combo.setEnabled(not busy)
         self._ap1_ssid_edit.setEnabled(not busy)
         self._ap1_pwd_edit.setEnabled(not busy)
         self._ap2_ssid_edit.setEnabled(not busy)
         self._ap2_pwd_edit.setEnabled(not busy)
+        self._refresh_btn.setEnabled(not busy)
+        self._btn_swap_ap.setEnabled(not busy)
+        self._can_close = not busy
