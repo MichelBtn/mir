@@ -1,3 +1,5 @@
+##### 29/07/2026. Utilitaire mir_esp_deploy.
+
 ##### 27/072026. ESP32 : configurer identifiants de points d'accès uniquement sur le port série.
 
 ##### 25/07/2026. correctif script de déploiement pi (mir_pi_sensors/deploy.sh)

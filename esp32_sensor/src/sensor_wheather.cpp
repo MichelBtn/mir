@@ -1,7 +1,6 @@
 #include "sensor_wheather.h"
 
 SensorWheather::SensorWheather(const char* id) : Sensor(id, 22) {
-
 }
 
 void SensorWheather::_update_data() {

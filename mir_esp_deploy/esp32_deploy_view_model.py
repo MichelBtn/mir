@@ -4,6 +4,7 @@ import subprocess
 from typing_extensions import override
 from PySide6.QtCore import Signal
 import re
+import os
 import subprocess
 from PySide6.QtCore import Signal, QObject
 from mir_utils.ui.view_model_base import VMAction, ViewModelBase
@@ -174,15 +175,26 @@ class Esp32DeployViewModel(ViewModelBase[DeployVMAction]):
         )
 
     
-
+    def build_flash_command(self, bin_dir: str, port: str) -> list[str]:
+        return [
+            "esptool.py", "--chip", "esp32", "--port", port, "--baud", "921600",
+            "--before", "default_reset", "--after", "hard_reset",
+            "write_flash", "-z", "--flash_mode", "dio", "--flash_freq", "40m", "--flash_size", "4MB",
+            "0x1000",  os.path.join(bin_dir, "bootloader.bin"),
+            "0x8000",  os.path.join(bin_dir, "partitions.bin"),
+            "0xe000",  os.path.join(bin_dir, "boot_app0.bin"),
+            "0x10000", os.path.join(bin_dir, "firmware.bin"),
+        ]
 
     def _do_flash(self, port: str, firmware: str) -> int:
         ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
         def clean_line(line: str) -> str:
             return ANSI_ESCAPE.sub('', line).strip()
 
+        bin_dir = Path("__file__").parent / "bin"
+        cmd = self.build_flash_command(str(bin_dir), port)
         process = subprocess.Popen(
-            ["esptool", "--port", port, "--baud", "921600", "write-flash", "0x10000", firmware],
+            cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
