@@ -1,4 +1,6 @@
 ##### 29/07/2026. Utilitaire mir_esp_deploy.
+mise à jour du firmware 
+configuration des identifiants de points d'accès via la liaison série
 
 ##### 27/072026. ESP32 : configurer identifiants de points d'accès uniquement sur le port série.
 
