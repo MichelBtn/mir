@@ -39,7 +39,7 @@
 - [ ] intégrer lidar sur port série
 - [ ] documentation
 - [ ] sécuriser la configuration des identifiants  du point d'accès Wifi
-
+- [ ] la calibration des moteurs min/max doit se faire par moteur (et non min pour tous les moteurs puis max pour tous les moteurs)
 
 
 
