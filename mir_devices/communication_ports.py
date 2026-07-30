@@ -1,5 +1,5 @@
 import platform
-import serial
+from serial import Serial
 import threading
 import time
 from queue import Queue
@@ -74,7 +74,7 @@ class CommPort(QObject):
         pass
 
     def read_line(self) -> str:
-        pass
+        return ""
 
     def _worker_loop(self):
         while not self._stop.is_set():
@@ -109,30 +109,41 @@ class CommPort(QObject):
 class SerialPort(CommPort):
     
     def __init__(self, port, baudrate=115200, end_of_line:str="\n", command_prefix="#", 
-                 connect_timeout:float=5.0, command_timeout:float=1.0, disable_rts_dtr=True):
+                 connect_timeout:float=5.0, command_timeout:float=1.0, enable_rts_dtr=True, empty_loop:bool=False):
         super().__init__(end_of_line, command_prefix=command_prefix, connect_timeout=connect_timeout, command_timeout=command_timeout)
-        self.ser = serial.Serial()
+        self.ser = Serial()
         self.ser.port = port
         self.ser.baudrate = baudrate
-        self._disable_rts_dtr = disable_rts_dtr
-        if disable_rts_dtr:
-            self.ser.dtr = False
-            self.ser.rts = False
+        self._enable_rts_dtr = enable_rts_dtr
+        self._empty_loop = empty_loop
         
     # --- Ouverture / Fermeture ------------------------------------------------
     def _open(self):
         if self.ser.is_open:
             return
         self.ser.timeout = self._connect_timeout
+        self.ser.dtr = self._enable_rts_dtr
+        self.ser.rts = self._enable_rts_dtr
         self.ser.open()
-        self.ser.timeout = self._command_timeout
-        if self._disable_rts_dtr:        
+        if self._empty_loop:        
+            self.ser.timeout = 1.0
+            start = time.time()
+            quiet_time = 0
+            while time.time() - start < 10.0:     # timeout de sécurité 10s
+                time.sleep(0.1)
+                if self.ser.in_waiting == 0:
+                    quiet_time += 0.1
+                    if quiet_time >= 1.0:        # 1s de silence → on considère que c’est fini
+                        break
+                else:
+                    bytes = self.ser.read(self.ser.in_waiting)
+                    str = bytes.decode('utf-8')
+                    print(f"{str}", end="", flush=True)
+                    quiet_time = 0
             time.sleep(0.1)
-            while True:
-                str = self.ser.read_until().decode()
-                if len(str) == 0:
-                    break        
-
+            self.ser.reset_input_buffer()
+        self.ser.timeout = self._command_timeout
+            
     def _close(self):
         if self.ser.is_open:
             self.ser.close()  # débloque read()
@@ -146,9 +157,9 @@ class SerialPort(CommPort):
         str = str.strip()
         return str
 
-    def write_line(self, line):
-        line += self._end_of_line
-        data = line.encode()
+    def write_line(self, command: str):
+        command += self._end_of_line
+        data = command.encode()
         self.ser.write(data)
 
 
@@ -190,3 +201,15 @@ class TcpPort(CommPort):
             if self._end_of_line_bytes in data:
                 line, _, _ = data.partition(self._end_of_line_bytes)
                 return line.decode("utf-8").strip()
+
+if __name__ == '__main__':
+    print("===== opening port...")
+    #esp32-wroom enable_rts_dtr = True, empty_loop = False
+    #esp32-cam enable_rts_dtr = False, empty_loop = True
+    serial = SerialPort("/dev/ttyUSB0", baudrate=115200, enable_rts_dtr=False, empty_loop=True)
+    serial.open()
+    print("\r\n\r\n====== port opened, reading configuration")
+    serial.write_line("get_configuration")
+    line = serial.read_line()
+    print(line)
+

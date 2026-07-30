@@ -94,8 +94,8 @@ class EspSensor(mirSensor):
         self._worker.run(self._loop, self._on_loop_finished, self._on_loop_failed, self)
         self._is_connected = True
 
-    def mir_connect_serial(self, port:str, baudrate:int=115200):
-        self._commPort = SerialPort(port, baudrate, disable_rts_dtr=False)
+    def mir_connect_serial(self, port:str, baudrate:int=115200, enable_rts_dtr: bool = False, empty_loop: bool = False):
+        self._commPort = SerialPort(port, baudrate, enable_rts_dtr=enable_rts_dtr, empty_loop=empty_loop)
         self._commPort.open()
         self._is_connected = True
 

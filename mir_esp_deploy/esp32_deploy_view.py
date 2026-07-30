@@ -1,3 +1,4 @@
+from mir.mir_utils.ui.widgets import IntLineEdit
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -134,19 +135,17 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         self._build_ui()
 
         # Liaisons signaux VM → Vue
-        self._view_model.ports_changed.connect(self._on_ports_changed)
         self._view_model.config_loaded.connect(self._on_config_loaded)
         self._view_model.status_changed.connect(self._on_status_changed)
-        self._view_model.flash_output_received.connect(self._on_flash_output_received)
+        self._view_model.log_added.connect(self._on_flash_output_received)
         self._view_model.busy_changed.connect(self._on_busy_changed)
 
         # Liaisons Vue → VM
         self._port_combo.currentIndexChanged.connect(self._on_port_changed)
-        self._firmware_edit.textChanged.connect(self._on_firmware_path_changed)
+        self._baud_combo.currentIndexChanged.connect(self._on_baud_rate_changed)
 
         # Initialisation
-        self._on_ports_changed(self._view_model.get_available_ports())
-        self._firmware_edit.setText(self._view_model.get_default_firmware_path())
+        self.update_ports(self._view_model.scan_ports())
 
     # --------------------------------------------------------------- construction
     def _build_ui(self):
@@ -167,16 +166,21 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         port_layout.addWidget(self._port_combo, 1)
 
         self._refresh_btn = QPushButton("Rafraîchir")
-        self._refresh_btn.clicked.connect(self._view_model.scan_ports)
+        self._refresh_btn.clicked.connect(lambda : self.update_ports(self._view_model.scan_ports()))
         self._view_model.get_action(DeployVMAction.REFRESH_PORTS).action_state_changed.connect(
             self._refresh_btn.setEnabled
         )
         port_layout.addWidget(self._refresh_btn)
         target_form.addRow("Port série", port_row)
 
-        self._firmware_edit = QLineEdit()
-        self._firmware_edit.setPlaceholderText("Chemin du firmware (.bin)")
-        target_form.addRow("Firmware", self._firmware_edit)
+        self._baud_combo = QComboBox()
+        self._baud_combo.setEditable(False)
+        for key, val in self._view_model.get_serial_configurations().items():
+            self._baud_combo.addItem(key, val)
+        # Sélectionner la valeur courante du VM
+        current_serial_cfg = self._view_model.get_serial_configuration()
+        self._baud_combo.setCurrentText(current_serial_cfg)
+        target_form.addRow("Modèle ESP32", self._baud_combo)
 
         # --- Identifiants Wi-Fi ---
         wifi_group = QGroupBox("Identifiants Wi-Fi")
@@ -207,7 +211,7 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         actions_group = QGroupBox("Actions")
         actions_layout = QHBoxLayout(actions_group)
 
-        self._flash_btn = QPushButton("Flasher le firmware")
+        self._flash_btn = QPushButton("Mettre à jour le firmware")
         self._flash_btn.clicked.connect(self._on_flash_clicked)
         self._view_model.get_action(DeployVMAction.FLASH).action_state_changed.connect(
             self._flash_btn.setEnabled
@@ -232,13 +236,10 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         actions_layout.addWidget(self._write_btn)
 
         # --- Log esptool ---
-        log_group = QGroupBox("Log esptool")
+        log_group = QGroupBox("Logs")
         log_layout = QVBoxLayout(log_group)
         self._log_edit = QPlainTextEdit()
         self._log_edit.setReadOnly(True)
-        self._log_edit.setPlaceholderText(
-            "La sortie de esptool apparaîtra ici."
-        )
         font = self._log_edit.font()
         font.setFamily("Monospace")
         self._log_edit.setFont(font)
@@ -290,10 +291,12 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
     def _on_port_changed(self, _index: int):
         self._view_model.set_selected_port(self._port_combo.currentText().strip())
 
-    def _on_firmware_path_changed(self, text: str):
-        self._view_model.set_firmware_path(text.strip())
+    def _on_baud_rate_changed(self, _index: int):
+        serial_cfg = self._baud_combo.currentText()
+        if serial_cfg is not None:
+            self._view_model.set_serial_configuration(serial_cfg)
 
-    def _on_ports_changed(self, ports: list[str]):
+    def update_ports(self, ports: list[str]):
         self._port_combo.blockSignals(True)
         self._port_combo.clear()
         if ports:
@@ -320,8 +323,8 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         self._status_label.setText(status)
 
     def _on_busy_changed(self, busy: bool):
-        self._firmware_edit.setEnabled(not busy)
         self._port_combo.setEnabled(not busy)
+        self._baud_combo.setEnabled(not busy)
         self._ap1_ssid_edit.setEnabled(not busy)
         self._ap1_pwd_edit.setEnabled(not busy)
         self._ap2_ssid_edit.setEnabled(not busy)
