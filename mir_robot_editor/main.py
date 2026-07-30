@@ -45,7 +45,7 @@ def enable_motor_bus_debug():
   debug_logger = logging.getLogger("lerobot.motors.motors_bus")
 
   # Évite les ajouts multiples de handlers si la fonction est appelée plusieurs fois
-  if debug_logger.hasHandlers():
+  if debug_logger.handlers:
     return
 
   # Définition et création du dossier de logs s'il n'existe pas
