@@ -81,7 +81,7 @@ class MotorBlock(QFrame):
 
     def btn_apply_clicked(self):
         value = self.target_value()
-        if value:
+        if value is not None:
             self._action_data.set_value(value)
             self.motor_action_changed.emit(self._action_data)
 

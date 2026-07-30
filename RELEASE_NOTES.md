@@ -1,3 +1,5 @@
+##### 30/07/2026. Correctif : robot monitor/Actions, la consigne de position 0 n'était pas prise en compte
+
 ##### 29/07/2026. Utilitaire mir_esp_deploy.
 mise à jour du firmware 
 configuration des identifiants de points d'accès via la liaison série
