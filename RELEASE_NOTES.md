@@ -3,17 +3,17 @@
 ##### 30/07/2026. Correctif : robot monitor/Actions, la consigne de position 0 n'était pas prise en compte
 
 ##### 29/07/2026. Utilitaire mir_esp_deploy.
-mise à jour du firmware 
+mise à jour du firmware   
 configuration des identifiants de points d'accès via la liaison série
 
 ##### 27/072026. ESP32 : configurer identifiants de points d'accès uniquement sur le port série.
 
 ##### 25/07/2026. correctif script de déploiement pi (mir_pi_sensors/deploy.sh)
-le fichier setup_services.sh n'était pas copié
+le fichier setup_services.sh n'était pas copié   
 le fichier requirements.in n'était pas copié
 
 ##### 24/07/2026. correctifs éditeur
-le chemin du dialogue 'sauver' n'était pas toujours restauré
+le chemin du dialogue 'sauver' n'était pas toujours restauré   
 l'état _configuration_dirty n'était pas correct après la sauvegarde d'une configuration scannée
 
 
@@ -32,7 +32,7 @@ la fenêtre de scan intègre désormais la configuration des capteurs et des ids
 ##### 18/07/2026. flag configuration_dirty : configuration enregistrée/non enregistrée
 
 ##### 15/7/2026. réinitialisation automatique des capteurs
-fonctions de reset intégrée à pi_camera (redémarrage du service, pas besoin d'un reboot complet de l'OS)
+fonctions de reset intégrée à pi_camera (redémarrage du service, pas besoin d'un reboot complet de l'OS)   
 fonctions de reset intégrée eux eps (reboot du capteur)
 
 ##### 14/7/2026. fenêtre de configuration des capteurs
