@@ -1,0 +1,628 @@
+2026-07-29 17:07:26,653 - [MOTOR_BUS] ================== START ===================================================
+2026-07-29 17:19:20,810 - [MOTOR_BUS] ================== START ===================================================
+2026-07-29 17:20:56,827 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:20:56,827 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:20:56,828 - [MOTOR_BUS] data_name='Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:20:56,829 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:20:56,829 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:20:56,830 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:20:56,831 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:20:56,831 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:20:56,832 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:20:56,833 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:20:56,833 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:20:56,834 - [MOTOR_BUS] data_name='Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:20:56,836 - [MOTOR_BUS] data_name='Torque_Enable'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:20:56,837 - [MOTOR_BUS] data_name='Operating_Mode'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:20:56,838 - [MOTOR_BUS] data_name='P_Coefficient'  id_=1 int_value=16 norm_value=16
+2026-07-29 17:20:56,838 - [MOTOR_BUS] data_name='I_Coefficient'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:20:56,839 - [MOTOR_BUS] data_name='D_Coefficient'  id_=1 int_value=32 norm_value=32
+2026-07-29 17:20:56,840 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:20:56,840 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:20:56,841 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:20:56,841 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:20:56,842 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-29 17:20:56,842 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:20:56,843 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-29 17:20:56,843 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:20:56,843 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:20:56,844 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:20:56,844 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:20:56,845 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-29 17:20:56,845 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:20:56,846 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-29 17:20:56,846 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:20:56,846 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:20:56,847 - [MOTOR_BUS] data_name='Torque_Enable'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:20:56,848 - [MOTOR_BUS] data_name='Operating_Mode'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:20:56,848 - [MOTOR_BUS] data_name='P_Coefficient'  id_=4 int_value=16 norm_value=16
+2026-07-29 17:20:56,848 - [MOTOR_BUS] data_name='I_Coefficient'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:20:56,849 - [MOTOR_BUS] data_name='D_Coefficient'  id_=4 int_value=32 norm_value=32
+2026-07-29 17:20:56,849 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:20:56,850 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:22:20,253 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:22:20,261 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2230} norm_values={1: 20.0}
+2026-07-29 17:22:24,669 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:22:24,674 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2003} norm_values={1: 0.1}
+2026-07-29 17:24:42,489 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:24:42,495 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 4050} norm_values={1: 180.0}
+2026-07-29 17:24:48,020 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:24:48,031 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 32813} norm_values={1: -180.0}
+2026-07-29 17:24:54,451 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:24:54,458 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2003} norm_values={1: 0.1}
+2026-07-29 17:25:09,947 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:25:09,956 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 546} norm_values={1: -128.0}
+2026-07-29 17:25:49,629 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:25:49,635 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2002} norm_values={1: 0.01}
+2026-07-29 17:27:38,074 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 0, 2: 0, 3: 0, 4: 0} norm_values={1: 0, 2: 0, 3: 0, 4: 0}
+2026-07-29 17:27:42,643 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 1997, 2: 3041, 3: 3414, 4: 2087} norm_values={1: -0.4835164835164835, 2: 89.75824175824175, 3: 121.84615384615384, 4: 7.56043956043956}
+2026-07-29 17:27:48,407 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:27:48,414 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:27:48,416 - [MOTOR_BUS] data_name='Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:27:48,418 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:27:48,419 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:27:48,420 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:27:48,422 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:27:48,422 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:27:48,423 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:27:48,424 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:27:48,425 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:27:48,427 - [MOTOR_BUS] data_name='Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:27:48,429 - [MOTOR_BUS] data_name='Torque_Enable'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:27:48,430 - [MOTOR_BUS] data_name='Operating_Mode'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:27:48,431 - [MOTOR_BUS] data_name='P_Coefficient'  id_=1 int_value=16 norm_value=16
+2026-07-29 17:27:48,432 - [MOTOR_BUS] data_name='I_Coefficient'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:27:48,433 - [MOTOR_BUS] data_name='D_Coefficient'  id_=1 int_value=32 norm_value=32
+2026-07-29 17:27:48,436 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:27:48,436 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:27:48,437 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:27:48,438 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:27:48,439 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-29 17:27:48,439 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:27:48,440 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-29 17:27:48,441 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:27:48,441 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:27:48,442 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:27:48,443 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:27:48,443 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-29 17:27:48,444 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:27:48,446 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-29 17:27:48,446 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:27:48,447 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:27:48,448 - [MOTOR_BUS] data_name='Torque_Enable'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:27:48,449 - [MOTOR_BUS] data_name='Operating_Mode'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:27:48,449 - [MOTOR_BUS] data_name='P_Coefficient'  id_=4 int_value=16 norm_value=16
+2026-07-29 17:27:48,450 - [MOTOR_BUS] data_name='I_Coefficient'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:27:48,451 - [MOTOR_BUS] data_name='D_Coefficient'  id_=4 int_value=32 norm_value=32
+2026-07-29 17:27:48,451 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:27:48,453 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:28:09,887 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:28:52,395 - [MOTOR_BUS] ================== START ===================================================
+2026-07-29 17:28:57,882 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:28:57,886 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:28:57,888 - [MOTOR_BUS] data_name='Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:28:57,889 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:28:57,889 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:28:57,890 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:28:57,891 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:28:57,892 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:28:57,892 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:28:57,893 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:28:57,894 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:28:57,895 - [MOTOR_BUS] data_name='Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:28:57,896 - [MOTOR_BUS] data_name='Torque_Enable'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:28:57,897 - [MOTOR_BUS] data_name='Operating_Mode'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:28:57,897 - [MOTOR_BUS] data_name='P_Coefficient'  id_=1 int_value=16 norm_value=16
+2026-07-29 17:28:57,898 - [MOTOR_BUS] data_name='I_Coefficient'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:28:57,899 - [MOTOR_BUS] data_name='D_Coefficient'  id_=1 int_value=32 norm_value=32
+2026-07-29 17:28:57,899 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:28:57,900 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:28:57,901 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:28:57,902 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:28:57,903 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-29 17:28:57,903 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:28:57,904 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-29 17:28:57,904 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:28:57,905 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:28:57,906 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:28:57,906 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:28:57,906 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-29 17:28:57,907 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:28:57,907 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-29 17:28:57,908 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:28:57,908 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:28:57,910 - [MOTOR_BUS] data_name='Torque_Enable'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:28:57,910 - [MOTOR_BUS] data_name='Operating_Mode'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:28:57,911 - [MOTOR_BUS] data_name='P_Coefficient'  id_=4 int_value=16 norm_value=16
+2026-07-29 17:28:57,911 - [MOTOR_BUS] data_name='I_Coefficient'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:28:57,912 - [MOTOR_BUS] data_name='D_Coefficient'  id_=4 int_value=32 norm_value=32
+2026-07-29 17:28:57,912 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:28:57,913 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:29:06,471 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 0} norm_values={1: 0}
+2026-07-29 17:29:06,476 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2116 norm_value=10.0
+2026-07-29 17:29:34,709 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:29:34,713 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2116 norm_value=10.0
+2026-07-29 17:31:11,169 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:31:53,272 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2002 norm_value=0.0
+2026-07-29 17:32:25,954 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:32:25,959 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2059 norm_value=5.0
+2026-07-29 17:32:31,864 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:32:31,870 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2059 norm_value=5.0
+2026-07-29 17:32:37,777 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:32:37,785 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2002 norm_value=0.0
+2026-07-29 17:34:44,218 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:34:44,221 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2343 norm_value=30.0
+2026-07-29 17:34:57,958 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:34:57,961 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2002 norm_value=0.0
+2026-07-29 17:35:03,699 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:35:03,701 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2343 norm_value=30.0
+2026-07-29 17:35:11,885 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:35:11,888 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2002 norm_value=0.0
+2026-07-29 17:37:22,997 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:37:23,002 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2343 norm_value=30.0
+2026-07-29 17:37:28,307 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:37:28,310 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2332 norm_value=29.0
+2026-07-29 17:39:07,142 - [MOTOR_BUS] ================== START ===================================================
+2026-07-29 17:39:12,106 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:39:12,108 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:39:12,108 - [MOTOR_BUS] data_name='Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:39:12,109 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:39:12,110 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:39:12,110 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:39:12,111 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:39:12,114 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:39:12,115 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:39:12,115 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:39:12,116 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:39:12,117 - [MOTOR_BUS] data_name='Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:39:12,118 - [MOTOR_BUS] data_name='Torque_Enable'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:39:12,118 - [MOTOR_BUS] data_name='Operating_Mode'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:39:12,119 - [MOTOR_BUS] data_name='P_Coefficient'  id_=1 int_value=16 norm_value=16
+2026-07-29 17:39:12,119 - [MOTOR_BUS] data_name='I_Coefficient'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:39:12,120 - [MOTOR_BUS] data_name='D_Coefficient'  id_=1 int_value=32 norm_value=32
+2026-07-29 17:39:12,120 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:39:12,121 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:39:12,122 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:39:12,122 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:39:12,123 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-29 17:39:12,123 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:39:12,123 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-29 17:39:12,124 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:39:12,124 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:39:12,126 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:39:12,127 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:39:12,127 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-29 17:39:12,128 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:39:12,128 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-29 17:39:12,129 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:39:12,129 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:39:12,130 - [MOTOR_BUS] data_name='Torque_Enable'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:39:12,130 - [MOTOR_BUS] data_name='Operating_Mode'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:39:12,131 - [MOTOR_BUS] data_name='P_Coefficient'  id_=4 int_value=16 norm_value=16
+2026-07-29 17:39:12,131 - [MOTOR_BUS] data_name='I_Coefficient'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:39:12,132 - [MOTOR_BUS] data_name='D_Coefficient'  id_=4 int_value=32 norm_value=32
+2026-07-29 17:39:12,132 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:39:12,132 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:39:17,497 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 0} norm_values={1: 0}
+2026-07-29 17:39:17,501 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2013 norm_value=1.0
+2026-07-29 17:39:24,174 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:39:24,177 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2013 norm_value=1.0
+2026-07-29 17:39:28,522 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:39:28,524 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2002 norm_value=0.0
+2026-07-29 17:39:30,594 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:39:30,596 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2002 norm_value=0.0
+2026-07-29 17:39:34,975 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:39:34,977 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2116 norm_value=10.0
+2026-07-29 17:39:38,282 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:39:38,284 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2002 norm_value=0.0
+2026-07-29 17:39:43,937 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:39:43,939 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2003 norm_value=0.1
+2026-07-29 17:39:48,414 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:39:48,416 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2008 norm_value=0.5
+2026-07-29 17:39:53,142 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:39:53,145 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2009 norm_value=0.6
+2026-07-29 17:39:57,286 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:39:57,288 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2010 norm_value=0.7
+2026-07-29 17:40:00,699 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:40:00,701 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2011 norm_value=0.8
+2026-07-29 17:40:05,458 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:40:05,460 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2013 norm_value=1.0
+2026-07-29 17:40:08,112 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:40:08,114 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2025 norm_value=2.0
+2026-07-29 17:40:13,662 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:40:13,666 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2002 norm_value=0.0
+2026-07-29 17:41:11,855 - [MOTOR_BUS] ================== START ===================================================
+2026-07-29 17:41:19,859 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:19,873 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:41:19,875 - [MOTOR_BUS] data_name='Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:41:19,879 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:19,880 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:41:19,880 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:41:19,881 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:19,882 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:41:19,883 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:41:19,884 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:19,885 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:41:19,888 - [MOTOR_BUS] data_name='Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:41:19,889 - [MOTOR_BUS] data_name='Torque_Enable'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:19,889 - [MOTOR_BUS] data_name='Operating_Mode'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:19,890 - [MOTOR_BUS] data_name='P_Coefficient'  id_=1 int_value=16 norm_value=16
+2026-07-29 17:41:19,893 - [MOTOR_BUS] data_name='I_Coefficient'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:19,893 - [MOTOR_BUS] data_name='D_Coefficient'  id_=1 int_value=32 norm_value=32
+2026-07-29 17:41:19,894 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:19,895 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:19,896 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:19,898 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:19,899 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-29 17:41:19,899 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:19,900 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-29 17:41:19,900 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:19,901 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:19,903 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:19,904 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:19,904 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-29 17:41:19,907 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:19,907 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-29 17:41:19,908 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:19,908 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:19,909 - [MOTOR_BUS] data_name='Torque_Enable'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:19,910 - [MOTOR_BUS] data_name='Operating_Mode'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:19,913 - [MOTOR_BUS] data_name='P_Coefficient'  id_=4 int_value=16 norm_value=16
+2026-07-29 17:41:19,913 - [MOTOR_BUS] data_name='I_Coefficient'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:19,914 - [MOTOR_BUS] data_name='D_Coefficient'  id_=4 int_value=32 norm_value=32
+2026-07-29 17:41:19,914 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:19,915 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:28,867 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:41:28,872 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2230 norm_value=20.0
+2026-07-29 17:41:32,869 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:41:32,872 - [MOTOR_BUS] data_name='Goal_Position'  id_=1 int_value=2002 norm_value=0.0
+2026-07-29 17:41:47,141 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:47,141 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:41:47,142 - [MOTOR_BUS] data_name='Acceleration'  id_=1 int_value=254 norm_value=254
+2026-07-29 17:41:47,143 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:47,143 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:41:47,144 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-29 17:41:47,144 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:47,145 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:41:47,146 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-29 17:41:47,147 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:47,148 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:41:47,148 - [MOTOR_BUS] data_name='Acceleration'  id_=4 int_value=254 norm_value=254
+2026-07-29 17:41:47,149 - [MOTOR_BUS] data_name='Torque_Enable'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:47,150 - [MOTOR_BUS] data_name='Operating_Mode'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:47,150 - [MOTOR_BUS] data_name='P_Coefficient'  id_=1 int_value=16 norm_value=16
+2026-07-29 17:41:47,151 - [MOTOR_BUS] data_name='I_Coefficient'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:47,151 - [MOTOR_BUS] data_name='D_Coefficient'  id_=1 int_value=32 norm_value=32
+2026-07-29 17:41:47,152 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:47,152 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=1 int_value=0 norm_value=0
+2026-07-29 17:41:47,153 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:47,154 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:47,155 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-29 17:41:47,155 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:47,155 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-29 17:41:47,156 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:47,156 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-29 17:41:47,157 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:47,158 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:47,158 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-29 17:41:47,159 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:47,160 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-29 17:41:47,160 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:47,161 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-29 17:41:47,162 - [MOTOR_BUS] data_name='Torque_Enable'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:47,162 - [MOTOR_BUS] data_name='Operating_Mode'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:47,163 - [MOTOR_BUS] data_name='P_Coefficient'  id_=4 int_value=16 norm_value=16
+2026-07-29 17:41:47,164 - [MOTOR_BUS] data_name='I_Coefficient'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:47,164 - [MOTOR_BUS] data_name='D_Coefficient'  id_=4 int_value=32 norm_value=32
+2026-07-29 17:41:47,165 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:41:47,165 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=4 int_value=0 norm_value=0
+2026-07-29 17:42:10,182 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:42:10,186 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2116} norm_values={1: 10.0}
+2026-07-29 17:42:26,267 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 0, 2: 0, 3: 0, 4: 0} norm_values={1: 0, 2: 0, 3: 0, 4: 0}
+2026-07-29 17:42:31,822 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2112, 2: 3041, 3: 3414, 4: 2088} norm_values={1: 9.626373626373626, 2: 89.75824175824175, 3: 121.84615384615384, 4: 7.648351648351649}
+2026-07-29 17:43:12,556 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:43:12,567 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2230} norm_values={1: 20.0}
+2026-07-29 17:44:11,423 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:44:11,430 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2230} norm_values={1: 20.0}
+2026-07-29 17:44:12,802 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 14} norm_values={1: 14}
+2026-07-29 17:44:12,809 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2230} norm_values={1: 20.0}
+2026-07-29 17:52:18,082 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={1: 0, 2: 0, 3: 0, 4: 0} norm_values={1: 0, 2: 0, 3: 0, 4: 0}
+2026-07-29 17:52:18,084 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={1: 2226, 2: 3041, 3: 3414, 4: 2088} norm_values={1: 19.64835164835165, 2: 89.75824175824175, 3: 121.84615384615384, 4: 7.648351648351649}
+2026-07-30 08:16:20,354 - [MOTOR_BUS] ================== START ===================================================
+2026-07-30 16:01:45,856 - [MOTOR_BUS] ================== START ===================================================
+2026-07-30 16:02:10,223 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:10,225 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:02:10,226 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:02:10,228 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:10,228 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:02:10,229 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:02:10,230 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:10,231 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:10,232 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-30 16:02:10,233 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:10,233 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-30 16:02:10,234 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:10,235 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:10,237 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:10,237 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:10,238 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-30 16:02:10,239 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:10,239 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-30 16:02:10,240 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:10,241 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:21,252 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:21,253 - [MOTOR_BUS] data_name='Lock'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:21,254 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:21,255 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:21,256 - [MOTOR_BUS] data_name='Lock'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:21,256 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:21,260 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:21,298 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:21,300 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:02:21,338 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:21,341 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:21,377 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:02:22,564 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:22,566 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:22,567 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:02:22,568 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:22,569 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:22,570 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:02:49,008 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:49,010 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:02:49,011 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:02:49,012 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:49,013 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:02:49,015 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:03:02,510 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:03:02,511 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:03:02,513 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:03:02,514 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:03:02,515 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:03:02,516 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:03:31,619 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:03:31,621 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:03:31,623 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:03:31,625 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:03:31,627 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:03:31,628 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:12:00,041 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:12:00,042 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:12:00,043 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:12:00,044 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:12:00,045 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:12:00,047 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:17:08,355 - [MOTOR_BUS] ================== START ===================================================
+2026-07-30 16:17:34,971 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:34,973 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:17:34,974 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:17:34,975 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:34,976 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:17:34,977 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:17:34,978 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:34,978 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:34,979 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-30 16:17:34,980 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:34,981 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-30 16:17:34,981 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:34,983 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:34,984 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:34,985 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:34,986 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-30 16:17:34,987 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:34,988 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-30 16:17:34,988 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:34,989 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:35,964 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:35,965 - [MOTOR_BUS] data_name='Lock'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:35,966 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:35,967 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:35,968 - [MOTOR_BUS] data_name='Lock'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:35,968 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:35,974 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:36,012 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:36,013 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:17:36,014 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:36,017 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:36,017 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:17:37,398 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:37,400 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:17:37,401 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:17:37,402 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:37,403 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:17:37,404 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:17:55,132 - [MOTOR_BUS] data_name='Lock'  id_=2 int_value=1 norm_value=1
+2026-07-30 16:17:55,134 - [MOTOR_BUS] data_name='Lock'  id_=3 int_value=1 norm_value=1
+2026-07-30 16:18:37,632 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:18:37,633 - [MOTOR_BUS] data_name='Lock'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:18:37,634 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:18:37,635 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:18:37,636 - [MOTOR_BUS] data_name='Lock'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:18:37,637 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:18:37,642 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:18:37,643 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:18:37,644 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:18:37,645 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:18:37,646 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:18:37,647 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:18:38,593 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:18:38,595 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:18:38,597 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:18:38,598 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:18:38,599 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:18:38,600 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:19:26,242 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:19:26,247 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:19:26,249 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:19:26,251 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:19:26,253 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:19:26,255 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:21:22,924 - [MOTOR_BUS] ================== START ===================================================
+2026-07-30 16:21:32,145 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:32,147 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:21:32,148 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:21:32,149 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:32,150 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:21:32,151 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:21:32,153 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:32,153 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:32,154 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-30 16:21:32,155 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:32,156 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-30 16:21:32,157 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:32,158 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:32,160 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:32,161 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:32,162 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-30 16:21:32,163 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:32,164 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-30 16:21:32,165 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:32,166 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:32,993 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:32,994 - [MOTOR_BUS] data_name='Lock'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:32,996 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:32,997 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:32,998 - [MOTOR_BUS] data_name='Lock'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:32,999 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:33,004 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:33,005 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:33,006 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:21:33,007 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:33,008 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:33,009 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:21:37,606 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:37,608 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:21:37,610 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:21:37,611 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:37,612 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:21:37,613 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:21:37,615 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=3676 norm_value=-1628
+2026-07-30 16:21:37,617 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=831 norm_value=831
+2026-07-30 16:22:01,031 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=3676 norm_value=-1628
+2026-07-30 16:22:01,032 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=1004 norm_value=1004
+2026-07-30 16:22:01,071 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=3129 norm_value=3129
+2026-07-30 16:22:01,074 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=831 norm_value=831
+2026-07-30 16:22:01,075 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=1026 norm_value=1026
+2026-07-30 16:22:01,078 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=3156 norm_value=3156
+2026-07-30 16:22:02,314 - [MOTOR_BUS] data_name='Lock'  id_=2 int_value=1 norm_value=1
+2026-07-30 16:22:02,316 - [MOTOR_BUS] data_name='Lock'  id_=3 int_value=1 norm_value=1
+2026-07-30 16:22:20,165 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:22:20,165 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:22:20,166 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:22:20,167 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:22:20,168 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:22:20,168 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:22:20,169 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:22:20,170 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:22:20,170 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-30 16:22:20,171 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:22:20,171 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-30 16:22:20,172 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:22:20,172 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:22:20,173 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:22:20,174 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:22:20,174 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-30 16:22:20,175 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:22:20,176 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-30 16:22:20,176 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:22:20,177 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:22:47,579 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={2: 137} norm_values={2: 137}
+2026-07-30 16:22:47,585 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={2: 2407} norm_values={2: 30.0}
+2026-07-30 16:24:34,621 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={2: 137} norm_values={2: 137}
+2026-07-30 16:24:34,624 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={2: 2635} norm_values={2: 50.0}
+2026-07-30 16:25:03,729 - [MOTOR_BUS] ================== START ===================================================
+2026-07-30 16:25:15,853 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:25:15,854 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:25:15,861 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:25:15,862 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:25:15,863 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:25:15,863 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:25:15,864 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:25:15,866 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:25:15,868 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-30 16:25:15,870 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:25:15,874 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-30 16:25:15,874 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:25:15,875 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:25:15,876 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:25:15,876 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:25:15,877 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-30 16:25:15,878 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:25:15,878 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-30 16:25:15,879 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:25:15,879 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:02,671 - [MOTOR_BUS] ================== START ===================================================
+2026-07-30 16:39:47,409 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:47,410 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:39:47,411 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:39:47,412 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:47,413 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:39:47,414 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:39:47,415 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:47,416 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:47,417 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-30 16:39:47,417 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:47,418 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-30 16:39:47,419 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:47,420 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:47,421 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:47,422 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:47,423 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-30 16:39:47,423 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:47,424 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-30 16:39:47,425 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:47,426 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:48,392 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:48,394 - [MOTOR_BUS] data_name='Lock'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:48,395 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:48,396 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:48,397 - [MOTOR_BUS] data_name='Lock'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:48,397 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:48,402 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:48,440 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:48,443 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:39:48,481 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:48,484 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:48,521 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:39:57,126 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:57,127 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:39:57,128 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=4095 norm_value=4095
+2026-07-30 16:39:57,129 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:57,130 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:39:57,131 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=4095 norm_value=4095
+2026-07-30 16:39:57,133 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=3641 norm_value=-1593
+2026-07-30 16:39:57,136 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=914 norm_value=914
+2026-07-30 16:40:18,624 - [MOTOR_BUS] data_name='Homing_Offset'  id_=2 int_value=3641 norm_value=-1593
+2026-07-30 16:40:18,626 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=2 int_value=898 norm_value=898
+2026-07-30 16:40:18,664 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=2 int_value=3138 norm_value=3138
+2026-07-30 16:40:18,667 - [MOTOR_BUS] data_name='Homing_Offset'  id_=3 int_value=914 norm_value=914
+2026-07-30 16:40:18,668 - [MOTOR_BUS] data_name='Min_Position_Limit'  id_=3 int_value=872 norm_value=872
+2026-07-30 16:40:18,671 - [MOTOR_BUS] data_name='Max_Position_Limit'  id_=3 int_value=3210 norm_value=3210
+2026-07-30 16:40:19,790 - [MOTOR_BUS] data_name='Lock'  id_=2 int_value=1 norm_value=1
+2026-07-30 16:40:19,792 - [MOTOR_BUS] data_name='Lock'  id_=3 int_value=1 norm_value=1
+2026-07-30 16:40:26,419 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:40:26,421 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:40:26,422 - [MOTOR_BUS] data_name='Acceleration'  id_=2 int_value=254 norm_value=254
+2026-07-30 16:40:26,423 - [MOTOR_BUS] data_name='Return_Delay_Time'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:40:26,424 - [MOTOR_BUS] data_name='Maximum_Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:40:26,425 - [MOTOR_BUS] data_name='Acceleration'  id_=3 int_value=254 norm_value=254
+2026-07-30 16:40:26,426 - [MOTOR_BUS] data_name='Torque_Enable'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:40:26,427 - [MOTOR_BUS] data_name='Operating_Mode'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:40:26,428 - [MOTOR_BUS] data_name='P_Coefficient'  id_=2 int_value=16 norm_value=16
+2026-07-30 16:40:26,429 - [MOTOR_BUS] data_name='I_Coefficient'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:40:26,430 - [MOTOR_BUS] data_name='D_Coefficient'  id_=2 int_value=32 norm_value=32
+2026-07-30 16:40:26,431 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:40:26,432 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=2 int_value=0 norm_value=0
+2026-07-30 16:40:26,433 - [MOTOR_BUS] data_name='Torque_Enable'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:40:26,434 - [MOTOR_BUS] data_name='Operating_Mode'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:40:26,435 - [MOTOR_BUS] data_name='P_Coefficient'  id_=3 int_value=16 norm_value=16
+2026-07-30 16:40:26,436 - [MOTOR_BUS] data_name='I_Coefficient'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:40:26,437 - [MOTOR_BUS] data_name='D_Coefficient'  id_=3 int_value=32 norm_value=32
+2026-07-30 16:40:26,438 - [MOTOR_BUS] data_name='Moving_Velocity_Threshold'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:40:26,438 - [MOTOR_BUS] data_name='Goal_Velocity'  id_=3 int_value=0 norm_value=0
+2026-07-30 16:40:42,961 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={2: 137} norm_values={2: 137}
+2026-07-30 16:40:42,966 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={2: 2018} norm_values={2: 0.0}
+2026-07-30 16:40:48,794 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={3: 137} norm_values={3: 137}
+2026-07-30 16:40:48,799 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={3: 2041} norm_values={3: 0.0}
+2026-07-30 16:40:53,614 - [MOTOR_BUS] data_name='Goal_Velocity'  int_ids_values={2: 0, 3: 0} norm_values={2: 0, 3: 0}
+2026-07-30 16:40:53,615 - [MOTOR_BUS] data_name='Goal_Position'  int_ids_values={2: 2015, 3: 2040} norm_values={2: -0.26373626373626374, 3: -0.08791208791208792}

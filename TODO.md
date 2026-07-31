@@ -12,7 +12,7 @@
 - [x] Rendre optionnel l'affichage des statistiques fps
 - [ ] Fournir un éditeur de script python intégrant par défaut les imports mir
 - [ ] Robot monitor, la zone Action contiendra un Teleop choisi parmi une liste (actions_widget devient Teleop)
-- [ ] Mettre en place un log des consignes/déplacements pour diagnostiquer le pb de moteur qui part dans le mauvais sens
+- [x] Mettre en place un log des consignes/déplacements pour diagnostiquer le pb de moteur qui part dans le mauvais sens
 - [ ] Mettre des marges lors de la calibration
 - [x] Lidar sur ESP32
 - [x] Intégrer ESP32 aux observations
@@ -41,6 +41,6 @@
 - [x] sécuriser la configuration des identifiants  du point d'accès Wifi
 - [ ] la calibration des moteurs min/max doit se faire par moteur (et non min pour tous les moteurs puis max pour tous les moteurs)
 - [x] corriger bug 'robot monitor/Actions', la consigne de position 0 n'est pas prise en compte
-
-
+- [ ] prendre en compte un couple maximum
+- [ ]  
 

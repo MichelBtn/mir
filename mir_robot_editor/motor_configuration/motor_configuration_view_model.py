@@ -14,7 +14,7 @@ from mir_robot.mir_robot_config import mirRobotConfig
 @dataclass
 class MotorConfigurationViewModel_MotorData():
     motor : mirMotor
-    pos : float | int
+    pos : str
     vel : int
     def can_set_pos(self) -> bool:
         return self.motor.operating_mode == OperatingMode.POSITION
@@ -24,6 +24,7 @@ class MotorConfigurationViewModel(ViewModelBase):
 
     def __init__(self, dialogProvider : IDialogProvider, config:mirRobotConfig):
         super().__init__(dialogProvider)
+        self._motors_config = config.motor_bus
         self._motors = config.motor_bus.motors
         self._temp_bus = mirFeetechMotorsBus(config.motor_bus)
         self._motors_data: dict[str, MotorConfigurationViewModel_MotorData] = {}
@@ -33,13 +34,7 @@ class MotorConfigurationViewModel(ViewModelBase):
             key: MotorConfigurationViewModel_MotorData(value, 0, 0)
             for key, value in self._motors.items()
         }
-        motors_pos = self._temp_bus.mir_read_positions()
-        for key in self._motors_data:
-            pos = motors_pos[key]
-            if pos is float:
-                self._motors_data[key].pos = round(pos, 2)
-            else:
-                self._motors_data[key].pos = int(pos)
+        self._update_motors_data_with_pos()
         self._is_calibration_done = False
 
     @property
@@ -65,6 +60,7 @@ class MotorConfigurationViewModel(ViewModelBase):
             self._temp_bus = None
 
     def _on_bus_is_calibrated_changed(self, is_calibrated :bool):
+        self._update_motors_data_with_pos()
         self.property_changed.emit("is_calibrated", is_calibrated)
 
     def get_port(self):
@@ -75,6 +71,24 @@ class MotorConfigurationViewModel(ViewModelBase):
         self._check_initialized()
         self._port = port
 
+    def calibrate_from_motors(self):
+        if self._motors_config is None:
+            return
+        cal = self._temp_bus.mir_read_calibration_from_motors()
+        if cal is None:
+            self._dialogProvider.information("Charger calibration moteurs", "Les calibrations des moteurs ne sont pas valides")
+            return
+        else:            
+            message = "Calibration chargée : \r\n"
+            for key, val in cal.items():
+                message += f"  {key} - id={val.id}\r\n"
+                message += f"    range_min={val.range_min}\r\n"
+                message += f"    range_max={val.range_max}\r\n"
+                message += f"    homing_offset={val.homing_offset}\r\n"
+            message += "\r\nVoulez-vous charger cette calibration ?"
+            if self._dialogProvider.question_yes_no("Charger calibration moteurs", message) :                
+                self._temp_bus.mir_calibrate_from_motors()
+        
     def execute_registers_viewmodel(self, open_view,  motor_name:str):
         try :
             self._check_initialized()
@@ -116,11 +130,18 @@ class MotorConfigurationViewModel(ViewModelBase):
         if self._temp_bus is not None:
             self._temp_bus.mir_emergency_stop()
 
+    def _update_motors_data_with_pos(self):
+        motors_pos = self._temp_bus.mir_read_positions()
+        for key in self._motors_data:
+            pos = motors_pos[key]
+            if isinstance(pos, float):
+                self._motors_data[key].pos = f"{pos:.2f}"
+            else:
+                self._motors_data[key].pos = str(int(pos))
+
     def _on_timer(self):
         if self._temp_bus is None:
             return
-        motors_pos = self._temp_bus.mir_read_positions()
-        for key, value in self._motors.items():
-            self._motors_data[key].pos = round(motors_pos[key], 2)
+        self._update_motors_data_with_pos()
         self.property_changed.emit("motors_data", self._motors_data)
 

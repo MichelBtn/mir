@@ -29,16 +29,16 @@
             "joint_1": {
                 "id": 2,
                 "drive_mode": 0,
-                "homing_offset": -1649,
-                "range_min": 913,
-                "range_max": 3296
+                "homing_offset": -1593,
+                "range_min": 898,
+                "range_max": 3138
             },
             "joint_2": {
                 "id": 3,
                 "drive_mode": 0,
-                "homing_offset": 951,
-                "range_min": 858,
-                "range_max": 3229
+                "homing_offset": 914,
+                "range_min": 872,
+                "range_max": 3210
             }
         }
     },

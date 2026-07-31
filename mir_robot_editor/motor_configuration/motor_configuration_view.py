@@ -28,8 +28,11 @@ class MotorConfigurationView(DialogBase, ViewBase[MotorConfigurationViewModel, V
         btnCalibrate.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         btnCalibrate.clicked.connect(self.calibrate_motors)
         toolbar.addWidget(btnCalibrate)
-        self.lbl_is_calibrated = QLabel("")
-        toolbar.addWidget(self.lbl_is_calibrated)
+
+        btnCalibrateFromMotors = QPushButton("Charger la calibration des moteurs...")
+        btnCalibrateFromMotors.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        btnCalibrateFromMotors.clicked.connect(self.calibrate_from_motors)
+        toolbar.addWidget(btnCalibrateFromMotors)
 
         toolbar.addStretch()
         main_layout.addLayout(toolbar)
@@ -47,11 +50,18 @@ class MotorConfigurationView(DialogBase, ViewBase[MotorConfigurationViewModel, V
         self.btn_emergency_stop.clicked.connect(lambda : self._view_model.emergency_stop())
         main_layout.addWidget(self.btn_emergency_stop, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)        
 
+        self.lbl_is_calibrated = QLabel("")
+
+        main_layout.addWidget(self.lbl_is_calibrated)
+
         main_layout.addStretch()
 
     def calibrate_motors(self):
         self._view_model.execute_calibration_view_model(lambda vm : CalibrationView(self, vm).exec())
 
+    def calibrate_from_motors(self):
+        self._view_model.calibrate_from_motors()
+        
     def show_registers(self, name:str):
         self._view_model.execute_registers_viewmodel(lambda vm: RegistersView(self, vm).exec(), name)
 
@@ -135,6 +145,15 @@ class MotorConfigurationView(DialogBase, ViewBase[MotorConfigurationViewModel, V
     def on_property_changed(self, property_name :str, property_value: object):
         if property_name == "is_calibrated":
             self.lbl_is_calibrated.setText("Moteurs calibrés, positions normalisées." if property_value else "Moteurs non calibrés, positions brutes")
+            style_sheet = "font-size: 14px;"  
+            if property_value:
+                style_sheet += "color: #005500;"
+            else:
+                style_sheet += "color: #bb5500;"
+            self.lbl_is_calibrated.setStyleSheet(style_sheet)
+            motors_data = self._view_model.motors_data
+            for key, tb in self.target_fields.items():
+                tb.setText(str(motors_data[key].pos))
         elif property_name == "motors_data":
             for key, motor_data in property_value.items():
                 self.pos_fields[key].setText(str(motor_data.pos))

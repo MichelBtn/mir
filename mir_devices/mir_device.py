@@ -1,4 +1,6 @@
+from lerobot.motors import MotorCalibration
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any, TypeAlias
 import numpy as np
 
@@ -104,6 +106,10 @@ class mirDevice(ABC):
         return self._actions
 
 
+@dataclass 
+class mirMotorCalibration(MotorCalibration):
+    pass
+
 class ImirFeetechMotorBus(mirDevice):
     
     @property
@@ -112,6 +118,14 @@ class ImirFeetechMotorBus(mirDevice):
         """Événement déclenché lorsque l'état de calibration change."""
         pass
 
+    @abstractmethod
+    def mir_read_calibration_from_motors(self) -> dict[str, mirMotorCalibration] | None:
+        """
+        Lit la calibration de tous les moteurs
+        retourne None si la calibration n'existe pas ou n'est pas valide
+        """
+        pass
+        
     @abstractmethod
     def mir_read_register(self, data_name: str, motor: str, num_retry: int = 0) ->int:
         pass
@@ -122,6 +136,10 @@ class ImirFeetechMotorBus(mirDevice):
 
     @abstractmethod
     def mir_write_register_by_id(self, data_name: str, motor_id: int, value: int, num_retry: int = 0) ->None:
+        pass
+
+    @abstractmethod
+    def mir_calibrate_from_motors(self):
         pass
 
     @abstractmethod

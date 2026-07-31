@@ -8,7 +8,14 @@ import time
 import dacite
 from lerobot.motors.feetech import FeetechMotorsBus, OperatingMode
 from lerobot.motors import MotorCalibration, Motor
-from mir_devices.mir_device import mirDevice, ActionValue, ObservableProperty, ObservationValue, ObservablePropertyFloat, ImirFeetechMotorBus, DeviceAction
+from mir_devices.mir_device import (mirDevice, 
+                                    ActionValue, 
+                                    ObservableProperty, 
+                                    ObservationValue, 
+                                    ObservablePropertyFloat, 
+                                    ImirFeetechMotorBus, 
+                                    DeviceAction,
+                                    mirMotorCalibration)
 from mir_utils.events import Event_
 from mir_devices.communication_ports import find_acm_serial_ports
 
@@ -83,9 +90,6 @@ sts3215_registers: dict[str, Register] = {
 
 RPM_PER_UNIT = 0.732
 
-@dataclass 
-class mirMotorCalibration(MotorCalibration):
-    pass
 
 @dataclass
 class mirMotor(Motor):
@@ -159,6 +163,16 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
     def mir_get_motors(self)->dict[str, mirMotor]:
         return self._mir_motors
 
+    @override
+    def mir_read_calibration_from_motors(self) -> dict[str, mirMotorCalibration] | None:
+        calibration = {key: mirMotorCalibration(id=cal.id, drive_mode=cal.drive_mode, homing_offset=cal.homing_offset, range_min=cal.range_min, range_max=cal.range_max) 
+                for key, cal in self.read_calibration().items()}
+        for c in calibration.values():
+            if c.range_max <= c.range_min:
+                return None
+        return calibration                
+
+    
     @property
     @override
     def is_calibrated(self) -> bool:
@@ -396,6 +410,18 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         self._config.calibration = self._mir_calibration
         if not self._mir_is_calibrated:
             raise Exception("La calibration des moteurs ne correspond pas à la calibration réalisée")           
+    
+    def mir_calibrate_from_motors(self):
+        self._check_mir_is_ready()
+        cal_from_motors = self.mir_read_calibration_from_motors()
+        if cal_from_motors is None:
+            raise Exception("La calibration des moteurs n'est pas valide")
+        self._mir_calibration = cal_from_motors
+        self.calibration = self._mir_calibration
+        self._set_is_calibrated(self.is_calibrated)
+        self._config.calibration = self._mir_calibration
+        if not self._mir_is_calibrated:
+            raise Exception("La calibration des moteurs ne correspond pas à la calibration appliquée")           
 
     def mir_store_calibration(self):
         self._check_mir_is_ready()
