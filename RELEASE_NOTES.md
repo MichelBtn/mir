@@ -1,3 +1,5 @@
+##### 31/07/2026. Option "Charger la calibration depuis les moteurs"
+
 ##### 30/07/2026. Correctif : robot monitor/Actions, la consigne de position 0 n'était pas prise en compte
 
 ##### 29/07/2026. Utilitaire mir_esp_deploy.

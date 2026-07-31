@@ -24,12 +24,18 @@ class MotorConfigurationView(DialogBase, ViewBase[MotorConfigurationViewModel, V
         #toolbar
         toolbar = QHBoxLayout()
 
-        btnCalibrate = QPushButton("Calibrer les moteurs...")
+        btnCalibrate = QToolButton()
+        btnCalibrate.setIcon(ViewBase.find_icon("calibration"))
+        btnCalibrate.setText("Calibrer les moteurs...")
+        btnCalibrate.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         btnCalibrate.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         btnCalibrate.clicked.connect(self.calibrate_motors)
         toolbar.addWidget(btnCalibrate)
 
-        btnCalibrateFromMotors = QPushButton("Charger la calibration des moteurs...")
+        btnCalibrateFromMotors = QToolButton()
+        btnCalibrateFromMotors.setIcon(ViewBase.find_icon("folder-open"))
+        btnCalibrateFromMotors.setText("Charger la calibration depuis les moteurs...")
+        btnCalibrateFromMotors.setToolButtonStyle(QtCore.Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         btnCalibrateFromMotors.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         btnCalibrateFromMotors.clicked.connect(self.calibrate_from_motors)
         toolbar.addWidget(btnCalibrateFromMotors)
