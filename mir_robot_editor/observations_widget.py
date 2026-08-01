@@ -1,8 +1,9 @@
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QGridLayout, QSizePolicy, QSplitter
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QGridLayout, QSizePolicy, QSplitter, QComboBox
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtGui import QImage, QPixmap, QTransform
 import numpy as np
 import pyqtgraph as pg
+import json
 from typing import TypeVar, Generic
 from mir_utils.ui.widgets import StateSavedView
 from mir_utils.metrics import RollingArray
@@ -141,50 +142,90 @@ class PolarWidget(PlotWidget[np.ndarray]):
         self._plot.update_plot(data)
 
 class VideoWidget(PlotWidget[np.ndarray]):
+    ROTATIONS = ["0°", "90°", "180°", "270°"]
+    
     def __init__(self, name: str, width: int = 640, height: int = 480, parent=None):
         super().__init__(parent)
         
-        self._widget_width = width
-        self._widget_height = height
+        self._base_width = width
+        self._base_height = height
+        self._rotation_angle = 0
 
-        self._header = QLabel(name)        
+        # Le header contient le label à gauche et le combo de rotation à droite
+        header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        self._header = QLabel(name)
+        header_layout.addWidget(self._header)
+        header_layout.addStretch()
+
+        self._rotation_combo = QComboBox()
+        self._rotation_combo.addItems(self.ROTATIONS)
+        self._rotation_combo.setCurrentIndex(0)
+        self._rotation_combo.setFixedWidth(70)
+        self._rotation_combo.currentIndexChanged.connect(self._on_rotation_changed)
+        header_layout.addWidget(self._rotation_combo)
+
         self._image_render = QLabel()
         self._image_render.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self._image_render.setMinimumSize(width, height)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self._header)
+        layout.addLayout(header_layout)
         layout.addWidget(self._image_render)
         
         # Initialiser avec une image noire
         black_frame = np.zeros((height, width, 3), dtype=np.uint8)
         self.update_plot(black_frame)
 
+    @property
+    def rotation(self) -> int:
+        """Angle de rotation de l'image (0, 90, 180, 270)."""
+        return self._rotation_angle
+
+    @rotation.setter
+    def rotation(self, angle: int):
+        if angle not in (0, 90, 180, 270):
+            raise ValueError("L'angle de rotation doit être 0, 90, 180 ou 270")
+        self._rotation_angle = angle
+        index = self.ROTATIONS.index(f"{angle}°")
+        self._rotation_combo.setCurrentIndex(index)
+        self._update_widget_size()
+        self.updateGeometry()
+
+    def _on_rotation_changed(self, index: int):
+        self._rotation_angle = int(self.ROTATIONS[index].rstrip("°"))
+        self._update_widget_size()
+        # Force le reparent à retailler si besoin
+        self.updateGeometry()
+
+    def _update_widget_size(self):
+        """Met à jour la taille d'affichage en fonction de la rotation."""
+        if self._rotation_angle in (90, 270):
+            self._image_render.setMinimumSize(self._base_height, self._base_width)
+        else:
+            self._image_render.setMinimumSize(self._base_width, self._base_height)
+
     def update_plot(self, data: np.ndarray):
         """
-        Affiche une image RGB avec scaling intelligent.
+        Affiche une image RGB avec scaling intelligent et rotation.
         
         Args:
             frame: numpy array RGB (H, W, 3) uint8
         
-        Comportement :
-        - Si image plus grande que le widget : zoom fit (garder le ratio)
-        - Si image plus petite : afficher en 1/1 et centrer
+        Une seule transformation combine le downscale et la rotation.
         """
         h, w, _ = data.shape
         qimg = QImage(data.data, w, h, 3 * w, QImage.Format.Format_RGB888)
         pixmap = QPixmap.fromImage(qimg)
-        
-        # Si l'image est plus grande que le widget, la réduire avec fit
-        pixmap = pixmap.scaled(
-            self._widget_width, 
-            self._widget_height, 
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation
-        )
-        # Sinon, afficher à la résolution 1/1 (centrage assuré par setAlignment)
-        
+
+        # Facteur d'échelle pour faire tenir l'image dans la zone d'affichage
+        scale = min(self._base_width / w, self._base_height / h)
+
+        # Une seule transformation : scale puis rotation
+        transform = QTransform().scale(scale, scale).rotate(self._rotation_angle)
+        pixmap = pixmap.transformed(transform, Qt.TransformationMode.SmoothTransformation)
+
         self._image_render.setPixmap(pixmap)
 
 class ScopeWidget(PlotWidget[float]):
@@ -281,11 +322,11 @@ class ResponsiveGridWidget(QWidget):
 
 class ObservationsWidget(QWidget):
 
-    def __init__(self, parent=None):
+    def __init__(self, state_saved_view: StateSavedView, parent=None):
         super().__init__(parent)
-        if isinstance(parent, StateSavedView):
-            self._state_saved_view = parent
+        self._state_saved_view = state_saved_view
         self._plots: dict[str, PlotWidget] = {}
+        self._pending_video_rotations: dict[str, int] = {}
 
         # Left column: scopes inside a responsive grid (columns vary with width)
         self._left_grid = ResponsiveGridWidget(min_column_width=420, spacing=8)
@@ -317,13 +358,27 @@ class ObservationsWidget(QWidget):
         self.setLayout(main_layout)
         self.setStyleSheet(" background-color: #eeeeee;")
 
-    def restore_state(self, _state_saved_view:StateSavedView):
-        splitter_state = _state_saved_view.restore_custom_state("observations_widget_splitter")
+    def restore_state(self):
+        splitter_state = self._state_saved_view.restore_custom_state("observations_widget_splitter")
         if splitter_state:
             self.splitter.restoreState(splitter_state)
+        # Stocker les rotations sauvegardées pour les appliquer à la création des VideoWidgets
+        rotations_json = self._state_saved_view.restore_custom_state("video_rotations")
+        if rotations_json:
+            self._pending_video_rotations = {k: int(v) for k, v in json.loads(rotations_json).items()}
+        else:
+            self._pending_video_rotations.clear()
+        print(self._pending_video_rotations)
 
-    def save_state(self, _state_saved_view:StateSavedView):
-        _state_saved_view.save_custom_state("observations_widget_splitter", self.splitter.saveState())
+    def save_state(self):
+        self._state_saved_view.save_custom_state("observations_widget_splitter", self.splitter.saveState())
+        # Charger les rotations existantes, merger les courantes, sauvegarder
+        rotations_json = self._state_saved_view.restore_custom_state("video_rotations")
+        existing = json.loads(rotations_json) if rotations_json else {}
+        current = {key: widget.rotation for key, widget in self._plots.items()
+                   if isinstance(widget, VideoWidget)}
+        existing.update(current)
+        self._state_saved_view.save_custom_state("video_rotations", json.dumps(existing))
 
     def add_scope(self, key: str, min_value: float, max_value: float, unit: str) -> ScopeWidget:
         if key in self._plots:
@@ -339,6 +394,9 @@ class ObservationsWidget(QWidget):
             raise KeyError(f"'{key}' already exists")
         video = VideoWidget(key, width=320, height=240)
         self._plots[key] = video
+        # Appliquer une rotation sauvegardée si elle existe
+        if key in self._pending_video_rotations:
+            video.rotation = self._pending_video_rotations[key]
         # Insert before the stretch to keep widgets at top
         insert_index = max(0, self._right_layout.count() - 1)
         self._right_layout.insertWidget(insert_index, video, alignment=Qt.AlignmentFlag.AlignHCenter)

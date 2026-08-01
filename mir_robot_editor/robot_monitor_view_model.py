@@ -153,7 +153,8 @@ class RobotMonitorViewModel(ViewModelBase[RobotMonitorVMAction]):
     def stop(self):
         if self._is_loop_running is True:
             self._stop_loop = True
-        self._actions[RobotMonitorVMAction.ACTION].set_enabled(False)               
+        self._actions[RobotMonitorVMAction.ACTION].set_enabled(False)    
+           
 
     def start(self, fps_str: str, fps_stats_enabled: bool):
         if self._is_loop_running is True:

@@ -52,8 +52,8 @@ class MainView(MainWindowBase, ViewBase[MainViewModel, MainVMAction]):
         robot_menu.addAction(self._disconnect_action)
         robot_menu.addAction(self._scan_action)
         
-        self.robot_monitor_view = RobotMonitorView(self, view_model.get_robot_monitor_view_model())
-        self.robot_monitor_view.restore_state(self)
+        self.robot_monitor_view = RobotMonitorView(self, view_model.get_robot_monitor_view_model(), self)
+        self.robot_monitor_view.restore_state()
 
         self.setCentralWidget(self.robot_monitor_view)
 
@@ -65,7 +65,7 @@ class MainView(MainWindowBase, ViewBase[MainViewModel, MainVMAction]):
 
     def closeEvent(self, event):
         if self._quit_action.isEnabled():
-            self.robot_monitor_view.save_state(self)
+            self.robot_monitor_view.save_state()
             return super().closeEvent(event)
         event.ignore()
     

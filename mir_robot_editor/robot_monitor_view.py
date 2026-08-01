@@ -20,8 +20,9 @@ from mir_devices.mir_device import ( ObservableProperty,
 
 class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAction]):
 
-    def __init__(self, parent, viewmodel: RobotMonitorViewModel):
+    def __init__(self, parent, viewmodel: RobotMonitorViewModel, state_saved_view: StateSavedView):
         super().__init__(parent, view_model = viewmodel) # type: ignore
+        self._state_saved_view = state_saved_view
         self._view_model = viewmodel
         self._view_model.observations_list_changed.connect(self.on_observations_list_changed)
         self._view_model.actions_list_changed.connect(self.on_actions_list_changed)
@@ -100,7 +101,7 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         left_bar.addStretch()
 
         # --- au centre les graphiques des observations  ---
-        self.observations_widgets = ObservationsWidget()
+        self.observations_widgets = ObservationsWidget(self._state_saved_view)
 
         # --- Barre de droite, les actions ---
         right_bar = QVBoxLayout()
@@ -120,11 +121,11 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         main_layout.addWidget(self.observations_widgets, 1)
         main_layout.addLayout(right_bar, 0)
 
-    def restore_state(self, state_saved_view: StateSavedView):
-        self.observations_widgets.restore_state(state_saved_view)
+    def restore_state(self):
+        self.observations_widgets.restore_state()
 
-    def save_state(self, state_saved_view: StateSavedView):
-        self.observations_widgets.save_state(state_saved_view)
+    def save_state(self):
+        self.observations_widgets.save_state()
         
     def on_select_all_features_clicked(self, select: bool):
         #select all checkboxes in options_layout
@@ -176,6 +177,8 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
                 self.observations_widgets.add_polar(name, prop.max_range, False, False)                
             
     def on_apply_clicked(self):
+        self.observations_widgets.restore_state()
+
         checked: list[str] = []
 
         for i in range(self.options_layout.count()):
@@ -193,6 +196,7 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
 
     def on_stop_clicked(self):
         self._view_model.stop()
+        self.save_state()
     
     def on_emergency_stop_clicked(self):
         self._view_model.on_emergency_stop_clicked()
