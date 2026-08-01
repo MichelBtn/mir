@@ -41,6 +41,6 @@
 - [x] sécuriser la configuration des identifiants  du point d'accès Wifi
 - [ ] la calibration des moteurs min/max doit se faire par moteur (et non min pour tous les moteurs puis max pour tous les moteurs)
 - [x] corriger bug 'robot monitor/Actions', la consigne de position 0 n'est pas prise en compte
-- [ ] prendre en compte un couple maximum
+- [x] prendre en compte un couple maximum
 - [x] pouvoir appliquer la calibration des moteurs à la configuration en cours
-
+- [ ] l'ordre des scopes ne respecte pas l'ordre des observations définies

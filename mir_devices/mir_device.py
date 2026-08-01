@@ -222,6 +222,10 @@ class ImirFeetechMotorBus(mirDevice):
         pass
 
     @abstractmethod
+    def mir_read_loads(self, motors: list[str]|None = None) -> dict[str, int|float]:
+        pass
+        
+    @abstractmethod
     def mir_read_temperatures(self, motors: list[str]|None = None) -> dict[str, int|float]:            
         pass
 

@@ -98,6 +98,8 @@ class mirMotor(Motor):
     I:int = 0 #noqa E741
     D:int = 32
     position_mode_velocity: int = 100 #vitesse lorsque le moteur est en mode POSITION
+    torque_limit: int = 250 #couple maximum en 0.1% 
+
 
 @dataclass
 class mirMotorBusConfiguration:
@@ -123,6 +125,7 @@ POSITION_SUFFIX = "position"
 VELOCITY_SUFFIX = "velocity"
 CURRENT_SUFFIX = "current"
 TEMPERATURE_SUFFIX = "temperature"
+LOAD_SUFFIX = "load"
 ACTION_POSITION_SUFFIX = "position"
 ACTION_VELOCITY_SUFFIX = "velocity"
 
@@ -380,6 +383,11 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         raw_currents = self.sync_read("Present_Current", motors)
         return {key: int(val * 6.5 + 0.5) for key, val in raw_currents.items()}
     
+    def mir_read_loads(self, motors: list[str]|None = None) -> dict[str, int|float]:
+        self._check_mir_is_ready()
+        raw_loads = self.sync_read("Present_Load", motors)
+        return {key: int(val / 10.0) for key, val in raw_loads.items()}
+    
     def mir_read_temperatures(self, motors: list[str]|None = None) -> dict[str, int|float]:            
         self._check_mir_is_ready()
         return self.sync_read("Present_Temperature", motors)
@@ -450,6 +458,7 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
             self.write("D_Coefficient", motor_name, motor.D)
             self.write("Moving_Velocity_Threshold", motor_name, 0)
             self.write("Goal_Velocity", motor_name, 0)
+            self.write("Torque_Limit", motor_name, motor.torque_limit)
             phase = self.read("Phase", motor_name)
             if phase != 0:
                 logger.warning(f"Remise à 0 du registre Phase du moteur {motor_name} qui était sur {phase}")
@@ -498,6 +507,10 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
             if len(temperatures_features) > 0:
                 temperatures = {f"{key}.{TEMPERATURE_SUFFIX}":value for key, value in self.mir_read_temperatures(temperatures_features).items()}
                 observation.update(temperatures)
+            loads_features = [feature.split(".")[0] for feature in self.subscribed_observations if feature.endswith(LOAD_SUFFIX)]
+            if len(loads_features) > 0:
+                loads = {f"{key}.{LOAD_SUFFIX}":value for key, value in self.mir_read_loads(loads_features).items()}
+                observation.update(loads)
         return observation
     
     def get_observables(self) -> dict[str, ObservableProperty]:
@@ -514,6 +527,7 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
                 observables[f"{key}.{VELOCITY_SUFFIX}"] = ObservablePropertyFloat(min_vel, max_vel)
                 observables[f"{key}.{CURRENT_SUFFIX}"] = ObservablePropertyFloat(0, 2700)
                 observables[f"{key}.{TEMPERATURE_SUFFIX}"] = ObservablePropertyFloat(0, 100)
+                observables[f"{key}.{LOAD_SUFFIX}"] = ObservablePropertyFloat(-100, 100)
             return observables
         finally:
             if should_disconnect and self.mir_is_connected():
