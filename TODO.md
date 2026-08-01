@@ -43,4 +43,4 @@
 - [x] corriger bug 'robot monitor/Actions', la consigne de position 0 n'est pas prise en compte
 - [x] prendre en compte un couple maximum
 - [x] pouvoir appliquer la calibration des moteurs à la configuration en cours
-- [ ] l'ordre des scopes ne respecte pas l'ordre des observations définies
+

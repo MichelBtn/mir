@@ -522,12 +522,12 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
             observables : dict[str, ObservableProperty] = {}
             for key, motor in self._mir_motors.items():
                 min_pos, max_pos = self.mir_get_motor_position_range(key)
-                observables[f"{key}.{POSITION_SUFFIX}"] = ObservablePropertyFloat(min_pos, max_pos)
+                observables[f"{key}.{POSITION_SUFFIX}"] = ObservablePropertyFloat(min_pos, max_pos, "deg")
                 min_vel, max_vel = self.mir_get_motor_velocity_range(key)
-                observables[f"{key}.{VELOCITY_SUFFIX}"] = ObservablePropertyFloat(min_vel, max_vel)
-                observables[f"{key}.{CURRENT_SUFFIX}"] = ObservablePropertyFloat(0, 2700)
-                observables[f"{key}.{TEMPERATURE_SUFFIX}"] = ObservablePropertyFloat(0, 100)
-                observables[f"{key}.{LOAD_SUFFIX}"] = ObservablePropertyFloat(-100, 100)
+                observables[f"{key}.{VELOCITY_SUFFIX}"] = ObservablePropertyFloat(min_vel, max_vel, "rpm")
+                observables[f"{key}.{CURRENT_SUFFIX}"] = ObservablePropertyFloat(0, 2700, "mA")
+                observables[f"{key}.{TEMPERATURE_SUFFIX}"] = ObservablePropertyFloat(0, 100, "°C")
+                observables[f"{key}.{LOAD_SUFFIX}"] = ObservablePropertyFloat(-100, 100, "%")
             return observables
         finally:
             if should_disconnect and self.mir_is_connected():

@@ -169,7 +169,7 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         self.observations_widgets.clear()
         for name, prop in observable_properties.items():
             if isinstance(prop, ObservablePropertyFloat):
-                self.observations_widgets.add_scope(name, prop.min_value, prop.max_value)
+                self.observations_widgets.add_scope(name, prop.min_value, prop.max_value, prop.unit)
             elif isinstance(prop, ObservablePropertyBitmap):
                 self.observations_widgets.add_video(name)                
             elif isinstance(prop, ObservablePropertyPolar):

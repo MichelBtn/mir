@@ -188,12 +188,13 @@ class VideoWidget(PlotWidget[np.ndarray]):
         self._image_render.setPixmap(pixmap)
 
 class ScopeWidget(PlotWidget[float]):
-    def __init__(self, name:str, min_value: float, max_value: float, width: int = 400, height: int = 130, history_size=1000):
+    def __init__(self, name:str, min_value: float, max_value: float, unit:str, width: int = 400, height: int = 130, history_size=1000):
         super().__init__()
         self._frames_scope = RollingArray(history_size)
         self._name = name
         self._min_value = min_value
         self._max_value = max_value
+        self._unit = unit
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         self.header = QLabel(name)
@@ -210,7 +211,7 @@ class ScopeWidget(PlotWidget[float]):
     def update_plot(self, data: float):
         self._frames_scope.add(data)
         samples_count, samples = self._frames_scope.get_array()
-        self.header.setText(f"{self._name:} {data:.1f}")
+        self.header.setText(f"{self._name:} {data:.1f}{self._unit}")
         if samples_count > 0:
             y = samples[-samples_count:]
             x = np.arange(len(samples))[-samples_count:]
@@ -324,10 +325,10 @@ class ObservationsWidget(QWidget):
     def save_state(self, _state_saved_view:StateSavedView):
         _state_saved_view.save_custom_state("observations_widget_splitter", self.splitter.saveState())
 
-    def add_scope(self, key: str, min_value: float, max_value: float) -> ScopeWidget:
+    def add_scope(self, key: str, min_value: float, max_value: float, unit: str) -> ScopeWidget:
         if key in self._plots:
             raise KeyError(f"'{key}' already exists")
-        scope = ScopeWidget(key, min_value, max_value)
+        scope = ScopeWidget(key, min_value, max_value, unit)
         self._plots[key] = scope
         # Add to the responsive grid on the left
         self._left_grid.add_widget(scope)

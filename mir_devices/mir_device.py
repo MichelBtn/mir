@@ -13,10 +13,12 @@ class ObservableProperty :
 class ObservablePropertyFloat(ObservableProperty):
     min_value: float
     max_value: float
-    def __init__(self, min_value:float, max_value:float):
+    unit: str
+    def __init__(self, min_value:float, max_value:float, unit:str):
         self.min_value = min_value
         self.max_value = max_value
         self.stype = 'float'
+        self.unit = unit
 
 class ObservablePropertyBitmap(ObservableProperty):
     def __init__(self, height:int, width:int, channels:int):

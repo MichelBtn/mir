@@ -1,3 +1,9 @@
+##### 01/08/2026. prise en compte d'un couple maximum
+par défaut 250 (25%) lors de la création du bus moteur   
+peut être modifié dans le fichier de configuration json
+
+##### 01/08/2026. affichage d'unités dans les observations
+
 ##### 31/07/2026. Option "Charger la calibration depuis les moteurs"
 
 ##### 30/07/2026. Correctif : robot monitor/Actions, la consigne de position 0 n'était pas prise en compte
