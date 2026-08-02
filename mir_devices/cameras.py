@@ -10,8 +10,7 @@ import time
 from mir_utils.metrics import SimpleMovingAverage, Stats, RollingArray
 from mir_devices.mir_sensor import (mirSensor, 
                                     mirPiCameraConfiguration, 
-                                    SensorProperty,
-                                    mirSensorConfiguration)
+                                    SensorProperty)
 from mir_devices.mir_device import (ObservablePropertyBitmap,
                                     ObservableProperty,
                                     ObservationValue,
@@ -31,9 +30,10 @@ class ImirCamera(mirSensor):
     
 
 class CamIP(ImirCamera):
-    def __init__(self, sensor_key:str, cfg : mirSensorConfiguration, url:str, frame_stats_size: int = 0):
+    def __init__(self, sensor_key:str, cfg : mirPiCameraConfiguration, url:str, frame_stats_size: int = 0):
         super().__init__(sensor_key)
         self._url = url
+        self._cfg = cfg
         self._frames_scope : RollingArray |None = None
         if frame_stats_size > 0:
             self._frames_scope  = RollingArray(frame_stats_size)

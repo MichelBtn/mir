@@ -12,8 +12,11 @@ import os
 from dataclasses import dataclass
 from lerobot.motors import MotorNormMode
 from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirMotorBusConfiguration, mirMotor
-from mir_devices.mir_sensor import (mirPiCameraConfiguration, 
-mirSensorConfiguration, EspSensorSimulationConfiguration, EspSensorWheatherConfiguration, EspSensorLidarConfiguration)
+from mir_devices.mir_sensor import (mirPiCameraConfiguration,
+                                    mirSensorConfiguration, 
+                                    EspSensorSimulationConfiguration, 
+                                    EspSensorWheatherConfiguration, 
+                                    EspSensorLidarConfiguration)
 
 DISCOVERY_PORT = 5679           # port d'écoute des équipements
 REPLY_PORT     = 5678           # port sur lequel le PC reçoit les réponses

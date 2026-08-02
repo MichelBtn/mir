@@ -173,10 +173,7 @@ class VideoWidget(PlotWidget[np.ndarray]):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(header_layout)
         layout.addWidget(self._image_render)
-        
-        # Initialiser avec une image noire
-        black_frame = np.zeros((height, width, 3), dtype=np.uint8)
-        self.update_plot(black_frame)
+        self.init_plot()
 
     @property
     def rotation(self) -> int:
@@ -196,7 +193,6 @@ class VideoWidget(PlotWidget[np.ndarray]):
     def _on_rotation_changed(self, index: int):
         self._rotation_angle = int(self.ROTATIONS[index].rstrip("°"))
         self._update_widget_size()
-        # Force le reparent à retailler si besoin
         self.updateGeometry()
 
     def _update_widget_size(self):
@@ -227,6 +223,11 @@ class VideoWidget(PlotWidget[np.ndarray]):
         pixmap = pixmap.transformed(transform, Qt.TransformationMode.SmoothTransformation)
 
         self._image_render.setPixmap(pixmap)
+
+    def init_plot(self):
+        # Initialiser avec une image noire
+        black_frame = np.zeros((self._base_height, self._base_width, 3), dtype=np.uint8)
+        self.update_plot(black_frame)
 
 class ScopeWidget(PlotWidget[float]):
     def __init__(self, name:str, min_value: float, max_value: float, unit:str, width: int = 400, height: int = 130, history_size=1000):
@@ -356,7 +357,7 @@ class ObservationsWidget(QWidget):
         main_layout = QHBoxLayout()
         main_layout.addWidget(self.splitter, stretch=1)
         self.setLayout(main_layout)
-        self.setStyleSheet(" background-color: #eeeeee;")
+        self.setStyleSheet("ObservationsWidget {background-color: #eeeeee;}")
 
     def restore_state(self):
         splitter_state = self._state_saved_view.restore_custom_state("observations_widget_splitter")
@@ -368,7 +369,6 @@ class ObservationsWidget(QWidget):
             self._pending_video_rotations = {k: int(v) for k, v in json.loads(rotations_json).items()}
         else:
             self._pending_video_rotations.clear()
-        print(self._pending_video_rotations)
 
     def save_state(self):
         self._state_saved_view.save_custom_state("observations_widget_splitter", self.splitter.saveState())
@@ -394,12 +394,13 @@ class ObservationsWidget(QWidget):
             raise KeyError(f"'{key}' already exists")
         video = VideoWidget(key, width=320, height=240)
         self._plots[key] = video
-        # Appliquer une rotation sauvegardée si elle existe
-        if key in self._pending_video_rotations:
-            video.rotation = self._pending_video_rotations[key]
         # Insert before the stretch to keep widgets at top
         insert_index = max(0, self._right_layout.count() - 1)
         self._right_layout.insertWidget(insert_index, video, alignment=Qt.AlignmentFlag.AlignHCenter)
+        # Appliquer une rotation sauvegardée si elle existe
+        if key in self._pending_video_rotations:
+            video.rotation = self._pending_video_rotations[key]
+        video.init_plot()            
         return video
 
     def add_polar(self, key: str, max_range: float, show_distances: bool = True, show_angles: bool = True) -> PolarWidget:
