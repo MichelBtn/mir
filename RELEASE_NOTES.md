@@ -1,3 +1,6 @@
+##### 02/08/2026. rotation de l'image caméra affichée
+choix de rotation : 0 (par défaut), 90, 180, 270  
+
 ##### 01/08/2026. prise en compte d'un couple maximum
 par défaut 250 (25%) lors de la création du bus moteur   
 peut être modifié dans le fichier de configuration json
