@@ -43,8 +43,8 @@ class mirSensorConfiguration:
             else:
                 raise ValueError(f"Unknown sensor type: {sensor_type}")
             sensors[k] = dacite.from_dict(target_class, v, dacite_config)
-        return sensors    
-   
+        return sensors
+
 @dataclass
 class mirPiCameraConfiguration(mirSensorConfiguration):
     ip: str | None = None
