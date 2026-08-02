@@ -1,3 +1,5 @@
+##### 02/08/2026. image caméra dans la fenêtre de configuration (scan devices)
+
 ##### 02/08/2026. rotation de l'image caméra affichée
 choix de rotation : 0 (par défaut), 90, 180, 270  
 

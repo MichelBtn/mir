@@ -29,7 +29,7 @@
 - [x] les champs fps,width et height du fichier de config sont à null pour pi_camera
 - [x] changer le principe des observations (mirSensor fournit un get_observable_features, ainsi que mirMotorBus)
 - [x] réinitialisation des capteurs lorsqu'un changement de configuration le nécessite
-- [ ] ajouter le widget approprié à la fenêtre de configuration de capteur
+- [x] ajouter le widget approprié à la fenêtre de configuration de capteur (uniquement caméra pour l'instant)
 - [x] proposer la liste des observations disponibles après un scan devices
 - [x] refactoriser les ObservationSchema avec ObservableProperty
 - [ ] sensor_type, SENSOR_TYPE ?

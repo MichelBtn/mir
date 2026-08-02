@@ -8,31 +8,35 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QCheckBox,
     QLineEdit,
-    QComboBox    
+    QComboBox,
+    QWidget    
 )
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QTimer
 from loguru import logger
 from mir_utils.ui.view_base import ViewBase
 from mir_robot_editor.sensor_configuration_view_model import SensorConfigurationViewModel
 from mir_utils.ui.widgets import DialogBase
 from mir_devices.mir_sensor import SensorProperty
+from mir_robot_editor.observations_widget import VideoWidget, PlotWidget
+from mir_devices.mir_device import ObservablePropertyBitmap
 
 class SensorConfigurationView(DialogBase, ViewBase):
     def __init__(self, parent, view_model: SensorConfigurationViewModel):
         super().__init__(parent, view_model=view_model)
         self.setWindowTitle(f"Configuration - {view_model.get_sensor_key()}")
 
-        main_layout = QVBoxLayout(self)
+        main_layout = QHBoxLayout(self)
+        left_layout = QVBoxLayout()
 
         # Récupère les propriétés configurables
         properties = view_model.get_configurable_properties()
         view_model.close_required.connect(self.close)
         if not properties:
             label = QLabel("Aucune propriété configurable disponible")
-            main_layout.addWidget(label)
+            left_layout.addWidget(label)
         else:
             grid = QGridLayout()
-            main_layout.addLayout(grid)
+            left_layout.addLayout(grid)
 
             # Stocke les widgets pour récupérer les valeurs plus tard
             self._property_widgets = {}
@@ -60,7 +64,15 @@ class SensorConfigurationView(DialogBase, ViewBase):
                     grid.addWidget(btn_apply_prop, r, 2)
 
             grid.setColumnStretch(1, 1)
-            main_layout.addStretch()
+            left_layout.addStretch()
+
+            right_layout = QVBoxLayout()
+            self._observation_widget = self._create_observation_widget()
+            if self._observation_widget is not None:
+                right_layout.addWidget(self._observation_widget)
+
+            main_layout.addLayout(left_layout, 1)
+            main_layout.addLayout(right_layout, 1)
 
         # Bottom buttons
         bottom = QHBoxLayout()
@@ -76,14 +88,28 @@ class SensorConfigurationView(DialogBase, ViewBase):
         bottom.addWidget(btn_cancel)
 
         bottom.addStretch()
-        main_layout.addLayout(bottom)
+        left_layout.addLayout(bottom)
+        self.adjustSize()
+
+        self._view_model.observation_ready.connect(self._on_observation_ready)
+
+    def _on_observation_ready(self, data):
+        if self._observation_widget is not None:
+            self._observation_widget.update_plot(data)
+
+    def _create_observation_widget(self) -> PlotWidget|None:
+        observable = self._view_model.get_observable()
+        if isinstance(observable, ObservablePropertyBitmap):
+            return VideoWidget("", width=320, height=240)
+        return None                
 
     def _create_widget_for_property(self, key, prop: SensorProperty):
         """Crée le widget approprié selon le type de propriété"""
+        MIN_WIDTH = 100
         try:
             if prop.property_type == "int":
                 spinbox = QSpinBox()
-                spinbox.setMinimumWidth(60)
+                spinbox.setMinimumWidth(MIN_WIDTH)
                 spinbox.setValue(int(prop.current_value))
                 spinbox.setAlignment(Qt.AlignmentFlag.AlignRight)
                 if prop.min_value is not None:
@@ -96,7 +122,7 @@ class SensorConfigurationView(DialogBase, ViewBase):
 
             elif prop.property_type == "float":
                 spinbox = QDoubleSpinBox()
-                spinbox.setMinimumWidth(60)
+                spinbox.setMinimumWidth(MIN_WIDTH)
                 spinbox.setAlignment(Qt.AlignmentFlag.AlignRight)
                 spinbox.setValue(float(prop.current_value))
                 if prop.min_value is not None:
@@ -114,11 +140,13 @@ class SensorConfigurationView(DialogBase, ViewBase):
 
             elif prop.property_type == "str":
                 lineedit = QLineEdit()
+                lineedit.setMinimumWidth(MIN_WIDTH)
                 lineedit.setText(str(prop.current_value))
                 return lineedit
 
             elif prop.property_type == "list":
                 combobox = QComboBox()
+                combobox.setMinimumWidth(MIN_WIDTH)
                 if prop.options is not None:
                     combobox.addItems(prop.options)
                 combobox.setCurrentText(str(prop.current_value))
