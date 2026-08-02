@@ -105,7 +105,7 @@ class SensorConfigurationView(DialogBase, ViewBase):
 
     def _create_widget_for_property(self, key, prop: SensorProperty):
         """Crée le widget approprié selon le type de propriété"""
-        MIN_WIDTH = 100
+        MIN_WIDTH = 120
         try:
             if prop.property_type == "int":
                 spinbox = QSpinBox()
