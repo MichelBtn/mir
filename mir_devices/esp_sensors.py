@@ -412,8 +412,8 @@ class EspSensorSimulation(EspSensor):
             self._data = {'omega': omega, 'theta': theta, 'timestamp': timestamp}
 
     def get_observables(self) -> dict[str, ObservableProperty]:
-        return { f"{self.sensor_key}.omega": ObservablePropertyFloat(-1, 1), 
-                 f"{self.sensor_key}.theta": ObservablePropertyFloat(-1, 1)}
+        return { f"{self.sensor_key}.omega": ObservablePropertyFloat(-1, 1, "rad/s"), 
+                 f"{self.sensor_key}.theta": ObservablePropertyFloat(-1, 1, "rad")}
 
 class EspSensorWheather(EspSensor):
     def _raw_data_size(self, count: int) -> int:
@@ -428,8 +428,8 @@ class EspSensorWheather(EspSensor):
             }
 
     def get_observables(self) -> dict[str, ObservableProperty]:
-        return { f"{self.sensor_key}.temperature": ObservablePropertyFloat(-10, 50), 
-                 f"{self.sensor_key}.rel_humidity": ObservablePropertyFloat(0, 100)}
+        return { f"{self.sensor_key}.temperature": ObservablePropertyFloat(-10, 50, "°C"), 
+                 f"{self.sensor_key}.rel_humidity": ObservablePropertyFloat(0, 100, "%")}
     
 
 def simulation_test():

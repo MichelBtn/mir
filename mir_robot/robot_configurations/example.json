@@ -12,7 +12,8 @@
                 "P": 16,
                 "I": 0,
                 "D": 32,
-                "position_mode_velocity": 100
+                "position_mode_velocity": 100,
+                "torque_limit": 250
             },
             "joint_2": {
                 "id": 3,
@@ -22,23 +23,24 @@
                 "P": 16,
                 "I": 0,
                 "D": 32,
-                "position_mode_velocity": 100
+                "position_mode_velocity": 100,
+                "torque_limit": 250
             }
         },
         "calibration": {
             "joint_1": {
                 "id": 2,
                 "drive_mode": 0,
-                "homing_offset": -1635,
-                "range_min": 939,
-                "range_max": 3280
+                "homing_offset": -1593,
+                "range_min": 898,
+                "range_max": 3138
             },
             "joint_2": {
                 "id": 3,
                 "drive_mode": 0,
-                "homing_offset": 849,
-                "range_min": 1013,
-                "range_max": 3161
+                "homing_offset": 914,
+                "range_min": 872,
+                "range_max": 3210
             }
         }
     },
@@ -55,10 +57,6 @@
         "esp_simulation_1": {
             "sensor_type": "esp_simulation",
             "ip": "192.168.1.18"
-        },
-        "esp_lidar_1": {
-            "sensor_type": "esp_lidar",
-            "ip": "192.168.1.26"
         }
     },
     "observations": {
@@ -69,18 +67,12 @@
         ],
         "esp_simulation_1.omega": "float",
         "esp_simulation_1.theta": "float",
-        "esp_lidar_1": [
-            400,
-            2
-        ],
         "joint_1.position": "float",
         "joint_1.velocity": "float",
-        "joint_1.current": "float",
-        "joint_1.temperature": "float",
+        "joint_1.load": "float",
         "joint_2.position": "float",
         "joint_2.velocity": "float",
-        "joint_2.current": "float",
-        "joint_2.temperature": "float"
+        "joint_2.load": "float"
     },
     "path": "/home/michel/Documents/projects/mir/mir_robot/robot_configurations/example.json"
 }

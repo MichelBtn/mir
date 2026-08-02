@@ -253,7 +253,7 @@ class ScopeWidget(PlotWidget[float]):
     def update_plot(self, data: float):
         self._frames_scope.add(data)
         samples_count, samples = self._frames_scope.get_array()
-        self.header.setText(f"{self._name:} {data:.1f}{self._unit}")
+        self.header.setText(f"{self._name:} {data:.1f} {self._unit}")
         if samples_count > 0:
             y = samples[-samples_count:]
             x = np.arange(len(samples))[-samples_count:]
