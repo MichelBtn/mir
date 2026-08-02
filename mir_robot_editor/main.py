@@ -2,6 +2,9 @@ import traceback
 from mir_utils.logs import enable_logging
 enable_logging()
 import sys   #noqa E402
+import logging #noqa E402
+from logging.handlers import RotatingFileHandler #noqa E402
+from pathlib import Path #noqa E402
 from PySide6 import QtWidgets #noqa E402
 from mir_robot_editor.main_view import MainView #noqa E402
 from mir_robot_editor.main_viewmodel import MainViewModel #noqa E402
@@ -26,10 +29,6 @@ def global_exception_handler(exc_type, exc_value, exc_traceback):
 
 # Redirection des exceptions non capturées de Python et PySide
 sys.excepthook = global_exception_handler
-
-import logging
-from logging.handlers import RotatingFileHandler
-from pathlib import Path
 
 class PrefixFilter(logging.Filter):
 

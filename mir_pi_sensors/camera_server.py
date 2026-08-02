@@ -9,6 +9,7 @@ from picamera2.outputs import FileOutput
 from waitress import serve
 import json
 import numpy as np
+# pyrefly: ignore [missing-import]
 from discovery_responder import DiscoveryResponder
 
 def to_jsonable(obj):
@@ -45,8 +46,9 @@ class StreamingOutput(io.BufferedIOBase):
         # Utilisation d'un timestamp pour éviter les blocages ou la surconsommation CPU
         self.last_updated = time.time()
 
-    def write(self, buf):
-        self.frame = buf
+    # pyrefly: ignore [bad-override]
+    def write(self, buffer):
+        self.frame = buffer
         self.last_updated = time.time()
 
 

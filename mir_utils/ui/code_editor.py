@@ -1,5 +1,6 @@
 import json
 import re
+from typing import cast
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, 
     QLabel, QPushButton, QTextEdit, QFrame
@@ -128,12 +129,11 @@ class JsonHighlighter(QSyntaxHighlighter):
     def applyTheme(self, theme):
         """Applies theme color variables to syntax highlight formats."""
         self.formats["key"].setForeground(QColor(theme["syntax_key"]))
-        self.formats["key"].setFontWeight(QFont.Bold if theme.get("syntax_key_bold", True) else QFont.Normal)
+        self.formats["key"].setFontWeight(QFont.Weight.Bold if theme.get("syntax_key_bold", True) else QFont.Weight.Normal)
         self.formats["string"].setForeground(QColor(theme["syntax_string"]))
         self.formats["number"].setForeground(QColor(theme["syntax_number"]))
         self.formats["keyword"].setForeground(QColor(theme["syntax_keyword"]))
         self.formats["punctuation"].setForeground(QColor(theme["syntax_punctuation"]))
-        self.formats["comment"].setForeground(QColor(theme["syntax_comment"]))
         self.formats["comment"].setFontItalic(True)
 
     def highlightBlock(self, text):
@@ -242,7 +242,7 @@ class CodeEditor(QPlainTextEdit):
         # Modern monospaced font settings
         font = QFont()
         font.setFamily("Consolas")
-        font.setStyleHint(QFont.Monospace)
+        font.setStyleHint(QFont.StyleHint.Monospace)
         font.setFixedPitch(True)
         font.setPointSize(10)
         self.setFont(font)
@@ -341,7 +341,7 @@ class CodeEditor(QPlainTextEdit):
                     0, top, 
                     self.line_number_area.width() - 8, 
                     self.fontMetrics().height(),
-                    Qt.AlignRight | Qt.AlignVCenter, 
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, 
                     number
                 )
 
@@ -361,29 +361,33 @@ class CodeEditor(QPlainTextEdit):
         self.highlightCurrentLine()
 
     def highlightCurrentLine(self):
-        extra_selections = []
+        extra_selections: list[QTextEdit.ExtraSelection] = []
 
         if not self.isReadOnly():
             selection = QTextEdit.ExtraSelection()
             line_color = QColor(self.current_theme["current_line_bg"])
-            selection.format.setBackground(line_color)
-            selection.format.setProperty(QTextFormat.FullWidthSelection, True)
-            selection.cursor = self.textCursor()
-            selection.cursor.clearSelection()
+            fmt = cast(QTextCharFormat, selection.format)  # pyrefly: PySide6 stub types this as Ellipsis
+            fmt.setBackground(line_color)
+            fmt.setProperty(QTextFormat.Property.FullWidthSelection, True)
+            cur = self.textCursor()
+            cur.clearSelection()
+            selection.cursor = cur  # type: ignore[assignment]
             extra_selections.append(selection)
 
         if self.error_lineno is not None:
             selection = QTextEdit.ExtraSelection()
             # Soft red background for the line containing invalid JSON
             error_color = QColor(self.current_theme["error_line_bg"])
-            selection.format.setBackground(error_color)
-            selection.format.setProperty(QTextFormat.FullWidthSelection, True)
+            fmt = cast(QTextCharFormat, selection.format)  # pyrefly: PySide6 stub types this as Ellipsis
+            fmt.setBackground(error_color)
+            fmt.setProperty(QTextFormat.Property.FullWidthSelection, True)
             
             doc = self.document()
             block = doc.findBlockByLineNumber(self.error_lineno - 1)
             if block.isValid():
-                selection.cursor = self.textCursor()
-                selection.cursor.setPosition(block.position())
+                cur = self.textCursor()
+                cur.setPosition(block.position())
+                selection.cursor = cur  # type: ignore[assignment]
                 extra_selections.append(selection)
 
         self.setExtraSelections(extra_selections)
@@ -405,7 +409,7 @@ class CodeEditor(QPlainTextEdit):
             closing_char = pairs[text]
             # If quotes, and we are already right before a quote, just step over
             if text == '"' and not cursor.atEnd():
-                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor)
+                cursor.movePosition(QTextCursor.MoveOperation.NextCharacter, QTextCursor.MoveMode.KeepAnchor)
                 if cursor.selectedText() == '"':
                     cursor.clearSelection()
                     self.setTextCursor(cursor)
@@ -414,7 +418,7 @@ class CodeEditor(QPlainTextEdit):
                 cursor.setPosition(cursor.position() - 1) # reset cursor
             
             cursor.insertText(text + closing_char)
-            cursor.movePosition(QTextCursor.PreviousCharacter)
+            cursor.movePosition(QTextCursor.MoveOperation.PreviousCharacter)
             self.setTextCursor(cursor)
             event.accept()
             return
@@ -422,7 +426,7 @@ class CodeEditor(QPlainTextEdit):
         # 2. Skip over closing bracket if typed
         if text in ('}', ']', ')'):
             if not cursor.atEnd():
-                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor)
+                cursor.movePosition(QTextCursor.MoveOperation.NextCharacter, QTextCursor.MoveMode.KeepAnchor)
                 if cursor.selectedText() == text:
                     cursor.clearSelection()
                     self.setTextCursor(cursor)
@@ -431,12 +435,12 @@ class CodeEditor(QPlainTextEdit):
                 cursor.setPosition(cursor.position() - 1)
 
         # 3. Backspace handling for matching pairs (deletes both)
-        if key == Qt.Key_Backspace:
+        if key == Qt.Key.Key_Backspace:
             if not cursor.atStart() and not cursor.atEnd():
-                cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.KeepAnchor)
+                cursor.movePosition(QTextCursor.MoveOperation.PreviousCharacter, QTextCursor.MoveMode.KeepAnchor)
                 char_before = cursor.selectedText()
                 cursor.setPosition(cursor.position() + 1)
-                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor)
+                cursor.movePosition(QTextCursor.MoveOperation.NextCharacter, QTextCursor.MoveMode.KeepAnchor)
                 char_after = cursor.selectedText()
                 cursor.setPosition(cursor.position() - 1)
                 
@@ -444,14 +448,14 @@ class CodeEditor(QPlainTextEdit):
                    (char_before == '[' and char_after == ']') or \
                    (char_before == '"' and char_after == '"') or \
                    (char_before == '(' and char_after == ')'):
-                    cursor.movePosition(QTextCursor.PreviousCharacter)
-                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 2)
+                    cursor.movePosition(QTextCursor.MoveOperation.PreviousCharacter)
+                    cursor.movePosition(QTextCursor.MoveOperation.NextCharacter, QTextCursor.MoveMode.KeepAnchor, 2)
                     cursor.removeSelectedText()
                     event.accept()
                     return
 
         # 4. Handle Enter key for smart auto-indentation
-        if key in (Qt.Key_Return, Qt.Key_Enter):
+        if key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
             current_line = cursor.block().text()
             # Keep previous line indentation
             leading_spaces = len(current_line) - len(current_line.lstrip(' '))
@@ -465,10 +469,10 @@ class CodeEditor(QPlainTextEdit):
             # Check if cursor is directly between open & close braces
             between_brackets = False
             if not cursor.atStart() and not cursor.atEnd():
-                cursor.movePosition(QTextCursor.PreviousCharacter, QTextCursor.KeepAnchor)
+                cursor.movePosition(QTextCursor.MoveOperation.PreviousCharacter, QTextCursor.MoveMode.KeepAnchor)
                 char_before = cursor.selectedText()
                 cursor.setPosition(cursor.position() + 1)
-                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor)
+                cursor.movePosition(QTextCursor.MoveOperation.NextCharacter, QTextCursor.MoveMode.KeepAnchor)
                 char_after = cursor.selectedText()
                 cursor.setPosition(cursor.position() - 1)
                 if (char_before == '{' and char_after == '}') or (char_before == '[' and char_after == ']'):
@@ -493,7 +497,7 @@ class CodeEditor(QPlainTextEdit):
                 return
 
         # 5. Handle Tab key by inserting 4 spaces
-        if key == Qt.Key_Tab:
+        if key == Qt.Key.Key_Tab:
             cursor.insertText(" " * INDENT)
             event.accept()
             return
@@ -529,22 +533,10 @@ class CodeEditorWidget(QWidget):
         header_layout.setContentsMargins(10, 4, 10, 4)
         header_layout.setSpacing(8)
 
-        # title_label = QLabel("JSON EDITOR", self.header)
-        # title_label.setObjectName("headerTitle")
-        # header_layout.addWidget(title_label)
-        # header_layout.addStretch()
-
         self.btn_format = QPushButton("Format", self.header)
         self.btn_format.clicked.connect(self.format_json)
         header_layout.addWidget(self.btn_format,0,  Qt.AlignmentFlag.AlignLeft)
 
-        # self.btn_minify = QPushButton("Minify", self.header)
-        # self.btn_minify.clicked.connect(self.minify_json)
-        # header_layout.addWidget(self.btn_minify)
-
-        # self.btn_clear = QPushButton("Clear", self.header)
-        # self.btn_clear.clicked.connect(self.clear_text)
-        # header_layout.addWidget(self.btn_clear)
         
         self.status_label = QLabel("✓ Valid JSON")
         self.status_label.setObjectName("statusLabel")
@@ -554,19 +546,6 @@ class CodeEditorWidget(QWidget):
         # 2. Main Editor
         self.editor = CodeEditor(self)
         layout.addWidget(self.editor)
-
-        # 3. Status Bar
-        # self.status_bar = QFrame(self)
-        # self.status_bar.setObjectName("statusBar")
-        # status_layout = QHBoxLayout(self.status_bar)
-        # status_layout.setContentsMargins(5, 2, 5, 2)
-        # status_layout.addStretch()
-
-        # self.cursor_label = QLabel("Ln 1, Col 1", self.status_bar)
-        # self.cursor_label.setObjectName("cursorLabel")
-        # status_layout.addWidget(self.cursor_label)
-
-        # layout.addWidget(self.status_bar)
 
         # Reference the editor's syntax highlighter
         self.highlighter = self.editor.highlighter
@@ -582,7 +561,6 @@ class CodeEditorWidget(QWidget):
 
         # Signals connections
         self.editor.textChanged.connect(self.on_text_changed)
-        #self.editor.cursorPositionChanged.connect(self.update_cursor_position)
 
     def setTheme(self, theme_name):
         """Applies stylesheet and color variables of the selected theme to the widget components."""
@@ -716,12 +694,6 @@ class CodeEditorWidget(QWidget):
     def on_text_changed(self):
         self.textChanged.emit()
         self.validation_timer.start()
-
-    # def update_cursor_position(self):
-    #     cursor = self.editor.textCursor()
-    #     line = cursor.blockNumber() + 1
-    #     col = cursor.columnNumber() + 1
-    #     self.cursor_label.setText(f"Ln {line}, Col {col}")
 
     def validate_json(self):
         text = self.toPlainText()

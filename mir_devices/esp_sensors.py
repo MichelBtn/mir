@@ -3,7 +3,6 @@ import socket
 import struct
 import time
 from concurrent.futures import Future
-from abc import abstractmethod
 from loguru import logger
 from typing import Any, cast
 import numpy as np
@@ -101,6 +100,8 @@ class EspSensor(mirSensor):
 
     def read_exactly(self, n):
         buf = b''
+        if self._data_socket is None:
+            raise RuntimeError("socket de données non initialisé")
         while len(buf) < n:
             chunk = self._data_socket.recv(n - len(buf))
             if not chunk:
@@ -148,6 +149,8 @@ class EspSensor(mirSensor):
     def _resync(self):
         """Avance octet par octet jusqu'à retrouver le magic."""
         buf = b''
+        if self._data_socket is None:
+            raise RuntimeError("socket de données non initialisé")
         while True:
             b = self._data_socket.recv(1)
             if not b:
@@ -158,7 +161,7 @@ class EspSensor(mirSensor):
 
     def mir_disconnect(self):
         self._disconnect_forced_stop_loop = True
-        if self._data_socket:
+        if self._data_socket is not None:
             try:
                 self._data_socket.shutdown(socket.SHUT_RDWR)
             except OSError:

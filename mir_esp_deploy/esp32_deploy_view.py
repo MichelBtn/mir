@@ -1,4 +1,3 @@
-from mir.mir_utils.ui.widgets import IntLineEdit
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,

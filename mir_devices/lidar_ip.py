@@ -10,7 +10,7 @@ from typing import Any
 class LidarSensorIP():
     def __init__(self, ip, port=8081):
         self._url = f"http://{ip}:{port}/stream"
-        self._last_scan:NDArray[Any] = None
+        self._last_scan:NDArray[Any]|None = None
         self._scan_lock = threading.Lock()
         self._bg_running = False
 
@@ -43,7 +43,7 @@ class LidarSensorIP():
                     if body:
                         yield np.load(io.BytesIO(body))
 
-    def get_last_scan(self) -> NDArray[Any]:
+    def get_last_scan(self) -> NDArray[Any]|None:
         if not self._bg_running:
             raise RuntimeError("get_last_scan() impossible : appeler start_background_scan() avant")
         with self._scan_lock:
@@ -74,7 +74,9 @@ if __name__ == "__main__":
     sc = ax.scatter([], [], s=2, alpha=0.8)
     
     ax.set_title('RPLIDAR C1', va='bottom', pad=20)
+    # pyrefly: ignore [missing-attribute]
     ax.set_theta_zero_location('N')
+    # pyrefly: ignore [missing-attribute]
     ax.set_theta_direction(-1)
     ax.set_ylim(0, 2500)
 

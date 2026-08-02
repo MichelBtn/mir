@@ -1,5 +1,4 @@
 from __future__ import annotations
-from loguru import logger
 from PySide6 import QtCore
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (

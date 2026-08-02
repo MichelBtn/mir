@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-Import("env")
+Import("env") # type: ignore[name-defined]  # noqa: F821
 
 def after_build(source, target, env):
     build_dir = Path(env.subst("$BUILD_DIR"))
@@ -21,4 +21,4 @@ def after_build(source, target, env):
 
     print(f"Fichiers synchronisés vers {dest_dir}")
 
-env.AddPostAction("buildprog", after_build)
+env.AddPostAction("buildprog", after_build)  # type: ignore[name-defined]  # noqa: F821

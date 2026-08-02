@@ -8,10 +8,9 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QCheckBox,
     QLineEdit,
-    QComboBox,
-    QWidget    
+    QComboBox
 )
-from PySide6.QtCore import Qt, QSize, QTimer
+from PySide6.QtCore import Qt, QSize
 from loguru import logger
 from mir_utils.ui.view_base import ViewBase
 from mir_robot_editor.sensor_configuration_view_model import SensorConfigurationViewModel

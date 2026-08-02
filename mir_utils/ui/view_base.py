@@ -21,6 +21,7 @@ class ViewBase(Generic[TViewModel, TAction]):
         return ViewBase.find_icon(icon_name)
 
     def _make_action(self, action_id: TAction, callback:Callable[[], None]|None, icon_name:str="", shortcut:str="", toolbar:QToolBar|None=None) -> QAction :
+        # pyrefly: ignore [bad-argument-type]
         action_info = self._view_model.get_action(action_id)
         q_action = QAction(action_info.name)
         q_action.setToolTip(action_info.description)   

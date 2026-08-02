@@ -6,7 +6,9 @@ import threading
 import numpy as np
 from flask import Flask, Response, jsonify, request
 from waitress import serve
+# pyrefly: ignore [missing-import]
 from lidar import LidarSensor
+# pyrefly: ignore [missing-import]
 from discovery_responder import DiscoveryResponder
 
 logging.basicConfig(level=logging.INFO)

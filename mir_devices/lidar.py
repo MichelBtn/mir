@@ -96,10 +96,12 @@ class RPLidar:
 
     def _send_cmd(self, cmd):
         req = SYNC_BYTE + cmd
+        assert self._serial is not None, "_send_cmd : Serial port is not connected"
         self._serial.write(req)
         self.logger.debug('Command sent: %s', _showhex(req))
 
     def _send_payload_cmd(self, cmd, payload):
+        assert self._serial is not None, "_send_payload_cmd : Serial port is not connected"
         size = struct.pack('B', len(payload))
         req  = SYNC_BYTE + cmd + size + payload
         checksum = 0
@@ -110,6 +112,7 @@ class RPLidar:
         self.logger.debug('Command sent: %s', _showhex(req))
 
     def _read_descriptor(self):
+        assert self._serial is not None, "_read_descriptor : Serial port is not connected"
         descriptor = self._serial.read(DESCRIPTOR_LEN)
         self.logger.debug('Descriptor: %s', _showhex(descriptor))
 
@@ -136,6 +139,7 @@ class RPLidar:
         return data_len, is_single, data_type
 
     def _read_scan_packet(self):
+        assert self._serial is not None, "_read_scan_packet : Serial port is not connected"
         """Lit un paquet de scan de 5 bytes en se resynchronisant si nécessaire."""
         while True:
             # Lire le premier byte et vérifier que S != S̄
@@ -172,6 +176,7 @@ class RPLidar:
             return new_scan, quality, angle, distance
 
     def _read_response(self, dsize):
+        assert self._serial is not None, "_read_response : Serial port is not connected"
         self.logger.debug('Reading %d bytes...', dsize)
         deadline = time.time() + self.timeout
         while self._serial.inWaiting() < dsize:
@@ -185,6 +190,7 @@ class RPLidar:
     # ------------------------------------------------------------------ public commands
 
     def get_info(self):
+        assert self._serial is not None, "get_info : Serial port is not connected"
         self._serial.flushInput()
         self._send_cmd(GET_INFO_BYTE)
         dsize, is_single, dtype = self._read_descriptor()
@@ -206,6 +212,7 @@ class RPLidar:
         }
 
     def get_health(self):
+        assert self._serial is not None, "get_health : Serial port is not connected"
         self._serial.flushInput()
         self._send_cmd(GET_HEALTH_BYTE)
         dsize, is_single, dtype = self._read_descriptor()
@@ -224,12 +231,14 @@ class RPLidar:
         return status, error_code
 
     def stop(self):
+        assert self._serial is not None, "stop : Serial port is not connected"
         self._send_cmd(STOP_BYTE)
         time.sleep(0.05)
         self._serial.flushInput()
         self.scanning = False
 
     def _wait_for_boot(self, timeout=3.0):
+        assert self._serial is not None, "_wait_for_boot : Serial port is not connected"
         """Attend que le capteur finisse d'envoyer sa bannière de boot."""
         self.logger.info('Waiting for boot banner to complete...')
         deadline = time.time() + timeout
@@ -247,11 +256,13 @@ class RPLidar:
                         boot_data.decode('ascii', errors='replace').strip())
         
     def reset(self):
+        assert self._serial is not None, "reset : Serial port is not connected"
         self._send_cmd(RESET_BYTE)
         time.sleep(2)       # le protocole exige ≥ 500 ms
         self._serial.flushInput()
 
     def start_scan(self):
+        assert self._serial is not None, "start_scan : Serial port is not connected"
         status, error_code = self.get_health()
         self.logger.info('Health: %s [%d]', status, error_code)
 
@@ -286,6 +297,7 @@ class RPLidar:
             self.start_motor()
         if not self.scanning:
             self.start_scan()
+        assert self._serial is not None, "iter_measures : Serial port is not connected"
 
         while True:
             if max_buf_bytes and self._serial.inWaiting() > max_buf_bytes:
@@ -448,6 +460,7 @@ class LidarSensor():
                     raise RPLidarException('Pas de scan disponible!')
                 return self.scan_to_array(self._last_scan, aggregation=aggregation)
         # Fallback sur la version synchrone si pas de thread
+        assert self._rplidar is not None, "RPLidar is not connected"
         scan = self._rplidar.get_last_scan()
         return self.scan_to_array(scan)
 
@@ -456,6 +469,7 @@ class LidarSensor():
         self._last_scan = []
         self._scan_lock = threading.Lock()
         self._bg_running = True
+        assert self._rplidar is not None, "RPLidar is not connected"
 
         def _worker():
             for scan in self._rplidar.iter_scans():
@@ -472,5 +486,6 @@ class LidarSensor():
                                 aggregation: str = 'mean'):
         if not self._is_connected:
             raise RPLidarException('Lidar non connecté')
+        assert self._rplidar is not None, "RPLidar is not connected"            
         for scan in self._rplidar.iter_scans(max_buf_bytes, min_len):
             yield self.scan_to_array(scan, aggregation=aggregation)
