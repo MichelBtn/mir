@@ -2,13 +2,22 @@
 [project]
 name = "mir_utils"
 version = "0.1.0"
+dependencies = [
+    "PySide6",
+    "loguru",
+    "typing_extensions",
+]
 
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["mir_utils"]
+packages = ["mir_utils", "mir_utils.ui"]
 
 [tool.setuptools.package-dir]
 "mir_utils" = "."
+
+[tool.setuptools.package-data]
+"mir_utils.ui" = ["icons/*.svg", "icons/*.png", "icons/*.md"]
+
