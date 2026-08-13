@@ -132,7 +132,7 @@ class EspSensor(mirSensor):
                 if header[:2] != EspSensor.MAGIC:
                     self._resync()
                     continue
-                id_, seq, ts, count = struct.unpack_from('<BIQH', header, 2)
+                seq, ts, count = struct.unpack_from('<IQH', header, 2)
                 raw_data = self.read_exactly(self._raw_data_size(count))
                 self._parse_data(raw_data, count, ts / 1000000.0)
             except (ConnectionError, OSError) as e:
