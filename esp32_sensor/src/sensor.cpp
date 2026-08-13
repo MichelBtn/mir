@@ -1,7 +1,7 @@
 #include "sensor.h"
 #include "esp_timer.h"
 
-const int HEADER_SIZE = 15;
+const int HEADER_SIZE = 14;
 
 Sensor::Sensor(const char* id, size_t data_buffer_size) {
     strncpy(_id, id, sizeof(_id) - 1);
@@ -13,7 +13,6 @@ uint8_t* Sensor::get_data_frame(uint16_t& len) {
     int pos = 0;
     _buffer[pos++] = MAGIC_0;
     _buffer[pos++] = MAGIC_1;
-    memcpy(_buffer + pos, &_id,        1); pos += 1;
     memcpy(_buffer + pos, &_sequence,  4); pos += 4;
     memcpy(_buffer + pos, &timestamp,  8); pos += 8;
     if (!_add_frame_data(pos))

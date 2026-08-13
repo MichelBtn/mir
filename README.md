@@ -11,7 +11,12 @@ OS supporté : Linux only
 installation :  
 cloner le dépot  
 activer l'environnement conda lerobot  
-depuis le dossier racine du projet, exécuter install.sh
+depuis le dossier racine du projet, exécuter install.sh  
+
+pour réutiliser la librairie mir_utils (pas de dépendance lerobot):   
+pip install -e "git+ssh://git@github.com/MichelBtn/mir.git#subdirectory=mir_utils"   
+ou en local, après installation comme ci-dessus :
+pip install -e /chemin/local/mir/mir_utils   
 
 ## Citation
 

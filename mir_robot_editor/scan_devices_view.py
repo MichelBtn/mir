@@ -1,3 +1,4 @@
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QFrame,
     QVBoxLayout,
@@ -7,7 +8,8 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QToolButton,
-    QGridLayout
+    QGridLayout,
+    QScrollArea,
 )
 from mir_robot_editor.scan_devices_view_model import ScanDevicesViewModel, DiscoveredDeviceViewModel, ScanDevicesVMAction
 from mir_utils.ui.widgets import DialogBase, ToolButton
@@ -65,7 +67,10 @@ class ObservationsSelectionView(DialogBase):
 
         grid.setRowStretch(row, 1)
 
-        main_layout.addWidget(center_frame)
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(center_frame)
+        scroll_area.setWidgetResizable(True)
+        main_layout.addWidget(scroll_area)
 
         # Barre inférieure avec Appliquer / Annuler
         bottom_bar = QHBoxLayout()
@@ -79,6 +84,12 @@ class ObservationsSelectionView(DialogBase):
         btn_apply.clicked.connect(self.on_apply)
 
         view_model.close_required.connect(self.close)
+
+        screen = self.screen() or QGuiApplication.primaryScreen()
+        if screen:
+            available_geometry = screen.availableGeometry()
+            self.setMaximumSize(available_geometry.width() * 0.75,available_geometry.height() * 0.8)
+            self.move(available_geometry.center() - self.rect().center())
 
     def select(self, select:bool):
         for cb in self._checkboxes:

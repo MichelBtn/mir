@@ -98,6 +98,8 @@ class IconFinder():
         
         @staticmethod
         def find_icon(icon_name:str):
+            if Path(icon_name).exists():
+                return QIcon(icon_name)
             filepath =  IconFinder._icons_directory / f"{icon_name}.svg"
             if filepath.exists():
                 return QIcon(str(filepath))

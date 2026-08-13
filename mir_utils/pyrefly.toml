@@ -1,0 +1,8 @@
+# mir/mir_utils/pyrefly.toml
+# il faut un pyrefly.toml indépendant ici pour éviter les cconflits d'imports lorsque mir_utils 
+# est utilisé hors mir
+# Pas d'interpreter-path ni de conda-environment ici :
+# mir_utils est un package pur, indépendant de lerobot.
+# Pyrefly doit utiliser l'interpréteur actif de qui l'appelle
+# (ia_labs/.venv quand vérifié depuis ia_labs, lerobot quand vérifié depuis mir).
+
