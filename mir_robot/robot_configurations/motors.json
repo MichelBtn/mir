@@ -44,13 +44,24 @@
             }
         }
     },
-    "sensors": {},
+    "sensors": {
+        "esp_simulation_1": {
+            "sensor_type": "esp_simulation",
+            "ip": "192.168.1.26"
+        }
+    },
     "observations": {
+        "esp_simulation_1.omega": "float",
+        "esp_simulation_1.theta": "float",
         "joint_1.position": "float",
         "joint_1.velocity": "float",
+        "joint_1.current": "float",
+        "joint_1.temperature": "float",
         "joint_1.load": "float",
         "joint_2.position": "float",
         "joint_2.velocity": "float",
+        "joint_2.current": "float",
+        "joint_2.temperature": "float",
         "joint_2.load": "float"
     },
     "path": "/home/michel/Documents/projects/mir/mir_robot/robot_configurations/motors.json"

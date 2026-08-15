@@ -1,4 +1,5 @@
 
+from PySide6.QtWidgets import QScrollArea
 from PySide6.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QCheckBox, QToolBar, QLineEdit, QGridLayout, QToolButton, QFrame
@@ -53,9 +54,14 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         left_bar_toolbar.addStretch()
         left_bar.addLayout(left_bar_toolbar)
 
-        self.options_layout = QVBoxLayout()  
-        
-        left_bar.addLayout(self.options_layout)
+        self.options_layout = QVBoxLayout()
+        self.options_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        scroll_content = QWidget()
+        scroll_content.setLayout(self.options_layout)
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(scroll_content)
+        scroll_area.setWidgetResizable(True)
+        left_bar.addWidget(scroll_area)
         
         fps_edit = QHBoxLayout()
         self.tb_fps = QLineEdit("50")
