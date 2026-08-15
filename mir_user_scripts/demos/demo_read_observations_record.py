@@ -11,6 +11,8 @@ idx = 0
 for name, entry in metadata.items():
     array = data[name]
     if isinstance(array, np.ndarray):
+        ymin = entry.get('min_value')
+        ymax = entry.get('max_value')
         min = np.min(array)
         max = np.max(array)
         mean = np.mean(array)
@@ -18,7 +20,7 @@ for name, entry in metadata.items():
         info=(f"Min={min:.1f} Max={max:.1f} Mean={mean:.1f} Std={std:.1f}")
         axs[idx].plot(array)
         axs[idx].set_title(f"{name} : {info}", fontsize=9)  # Ajoute un titre à la figure
-        axs[idx].set_xlabel('Index',fontsize=9)
+        axs[idx].set_ylim(ymin, ymax) # Exemple : force l'échelle entre 0 et 1
         axs[idx].set_ylabel(entry['unit'],fontsize=9)
         axs[idx].tick_params(axis='both', labelsize=8) 
         axs[idx].grid(True)
