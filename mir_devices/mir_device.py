@@ -14,11 +14,14 @@ class ObservablePropertyFloat(ObservableProperty):
     min_value: float
     max_value: float
     unit: str
-    def __init__(self, min_value:float, max_value:float, unit:str):
+    dtype: np.dtype
+
+    def __init__(self, min_value: float, max_value: float, unit: str, dtype: np.dtype = np.dtype(np.float32)):
         self.min_value = min_value
         self.max_value = max_value
         self.stype = 'float'
         self.unit = unit
+        self.dtype = dtype
 
 class ObservablePropertyBitmap(ObservableProperty):
     def __init__(self, height:int, width:int, channels:int):
@@ -30,6 +33,23 @@ class ObservablePropertyPolar(ObservableProperty):
         self.stype = (num_points, 2)
         self.max_range = max_range
 
+class ObservablePropertyConverter :
+    @classmethod
+    def property_to_dict(cls, property: ObservableProperty) -> dict[str, Any]:
+        if isinstance(property, ObservablePropertyFloat):
+            return {
+                "type": property.stype,
+                "min_value": property.min_value,
+                "max_value": property.max_value,
+                "unit": property.unit,
+                "dtype": property.dtype
+            }
+        raise NotImplementedError(f"ObservableProperty type {type(property)} not supported")
+
+    @classmethod
+    def observables_to_dict(cls, observables: dict[str, ObservableProperty]) -> dict[str, dict[str, Any]]:
+        return {name: cls.property_to_dict(property) for name, property in observables.items()}
+    
 class DeviceAction :
     def __init__(self, device_name: str, action_name: str, default_value: ActionValue, type :str, unit: str, range:tuple[ActionValue, ActionValue]|None):
         self.device_name: str = device_name

@@ -142,3 +142,72 @@ class RollingArray:
     def get_array(self):
         with self._lock:
             return self._samples_count, self._buffer.copy()
+
+import numpy as np
+from typing import Any, TypeAlias
+import json
+from pathlib import Path
+
+class DataRecorder:
+    def __init__(self, observables: dict[str, dict[str, Any]], capacity: int):
+        self._observables = observables
+        self._capacity = capacity
+        self._count = 0
+
+        self._data: dict[str, np.ndarray] = {
+            name: np.empty(capacity, dtype=prop["dtype"]) for name, prop in observables.items()
+        }
+
+    def append(self, observations: dict[str, float|np.ndarray]) -> None:
+        if self._count >= self._capacity:
+            return
+
+        if observations.keys() != self._observables.keys():
+            raise ValueError(
+                f"Clés attendues {set(self._observables.keys())}, reçues {set(observations.keys())}"
+            )
+
+        for name, value in observations.items():
+            self._data[name][self._count] = value
+
+        self._count += 1
+
+    def get(self, name: str) -> np.ndarray:
+        """Vue tronquée (sans copie) sur les observations valides d'un observable."""
+        return self._data[name][: self._count]
+
+    def as_dict(self) -> dict[str, np.ndarray]:
+        return {name: self.get(name) for name in self._observables}
+
+    def is_full(self) -> bool:
+        return self._count >= self._capacity
+
+    def save(self, path: str | Path) -> None:
+        """Sauvegarde données et métadonnées dans un seul fichier '<path>.npz'."""
+        path = Path(path)
+
+        arrays = {name: self.get(name) for name in self._observables}
+
+        # dtype numpy -> str pour rendre le dict sérialisable en JSON
+        serializable_observables = {
+            name: {**prop, "dtype": np.dtype(prop["dtype"]).name}
+            for name, prop in self._observables.items()
+        }
+        metadata_json = json.dumps(serializable_observables)
+
+        all_arrays: dict[str, np.ndarray] = {**arrays, "__metadata__": np.array(metadata_json)}
+        np.savez(path, **all_arrays)  # pyrefly: ignore
+
+    @classmethod
+    def load(cls, path: str | Path) -> tuple[dict[str, np.ndarray], dict[str, dict[str, Any]]]:
+        """Charge données et métadonnées depuis un fichier '<path>.npz'."""
+        path = Path(path)
+
+        with np.load(path) as npz:
+            metadata = json.loads(str(npz["__metadata__"]))
+            data = {name: npz[name] for name in npz.files if name != "__metadata__"}
+
+        return data, metadata
+
+    def __len__(self) -> int:
+        return self._count            

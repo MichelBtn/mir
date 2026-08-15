@@ -52,7 +52,7 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         self.btn_deselect_all = ToolButton("unselect_all", lambda: self.on_select_all_features_clicked(False), False, "Désélectionner tout")
         left_bar_toolbar.addWidget(self.btn_deselect_all)
         left_bar_toolbar.addStretch()
-        _checked_btn_style = "QToolButton:checked { background-color: #FF8456; border-radius: 4px; }"
+        _checked_btn_style = "QToolButton:checked { background-color: #FF9567; border-radius: 4px; }"
         self.btn_record = QToolButton()
         self.btn_record.setIcon(self._icon("record"))
         #self.btn_record.toggled.connect(self.on_record_toggled)
@@ -208,7 +208,7 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         self._view_model.apply_observations(checked)
 
     def on_start_clicked(self):
-        self._view_model.start(self.tb_fps.text(), self.btn_show_fps.isChecked())
+        self._view_model.start(self.tb_fps.text(), self.btn_show_fps.isChecked(), self.btn_record.isChecked())
         self._last_timestamp = 0
 
     def on_stop_clicked(self):

@@ -23,7 +23,7 @@ from mir_devices.mir_device import (ObservablePropertyPolar,
 from mir_utils.concurrency import BackgroundWorker
 
 class EspSensor(mirSensor):
-    HEADER_SIZE = 17
+    HEADER_SIZE = 16
     MAGIC = b'\xA5\x5A'
 
     def __init__(self, sensor_key:str, cfg:EspSensorConfiguration):

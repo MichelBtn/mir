@@ -1,5 +1,0 @@
-Paramétrage couple max (registre Torque_Limit, 48)
-Affichage (plot et bit leds) des flags Servo_Status (65)
-Affichage (plot) Present_Load (60)
-Paramétrage Overflow_Protection_Time (38)
-

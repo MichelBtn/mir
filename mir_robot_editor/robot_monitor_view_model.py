@@ -3,10 +3,11 @@ import traceback
 from enum import Enum, auto
 from typing import Any
 import time
+from pathlib import Path
 from threading import Lock
 from PySide6.QtCore import Signal
-from mir_devices.mir_device import DeviceAction
-from mir_utils.metrics import SimpleMovingAverage, Stats
+from mir_devices.mir_device import DeviceAction, ObservablePropertyFloat, ObservablePropertyConverter
+from mir_utils.metrics import SimpleMovingAverage, Stats, DataRecorder
 from mir_utils.period_waiters import PeriodWaiterExact
 from mir_utils.concurrency import BackgroundWorker
 from mir_robot.mir_robot import mirRobot
@@ -43,6 +44,7 @@ class RobotMonitorViewModel(ViewModelBase[RobotMonitorVMAction]):
 
     def __init__(self, dialog_provider):
         super().__init__(dialog_provider)
+        self._observation_recorder : DataRecorder | None = None
         self._worker = BackgroundWorker()
         self._last_action_lock = Lock()
         self._last_action : dict[str, Any ] | None = None
@@ -87,6 +89,8 @@ class RobotMonitorViewModel(ViewModelBase[RobotMonitorVMAction]):
                 fps_stats.update(t0, t)
             t0 = t
             observations: dict[str, Any] = self._robot.get_observation()
+            if self._observation_recorder is not None:
+                self._observation_recorder.append(observations)
             self.observation_ready.emit(observations)
             action:dict[str, ActionValue]|None = self.get_robot_action()
             if action:
@@ -101,6 +105,9 @@ class RobotMonitorViewModel(ViewModelBase[RobotMonitorVMAction]):
         self._actions[RobotMonitorVMAction.START].set_enabled(True)   
         self._actions[RobotMonitorVMAction.STOP].set_enabled(False)   
         self._actions[RobotMonitorVMAction.ACTION].set_enabled(False)   
+        if self._observation_recorder is not None:
+            path = Path(__file__).parent.parent / "data/rec.npz"
+            self._observation_recorder.save(path)
         self.busy_state_changed.emit(False)
 
     def _on_loop_failed(self, error: Exception):
@@ -156,7 +163,7 @@ class RobotMonitorViewModel(ViewModelBase[RobotMonitorVMAction]):
         self._actions[RobotMonitorVMAction.ACTION].set_enabled(False)    
            
 
-    def start(self, fps_str: str, fps_stats_enabled: bool):
+    def start(self, fps_str: str, fps_stats_enabled: bool, observations_recording_enabled: bool):
         if self._is_loop_running is True:
             return              
         self._fps_stats_enabled = fps_stats_enabled
@@ -167,6 +174,16 @@ class RobotMonitorViewModel(ViewModelBase[RobotMonitorVMAction]):
         except Exception:
             self._dialogProvider.warning("Valeur fps invalide", "La valeur de fps doit être un entier entre 10 et 1000")
             return
+        self._observations_recording_enabled = observations_recording_enabled
+        if observations_recording_enabled:
+            record_max_duration = 600
+            observables = {name:prop for name,prop in self._observables.items() if isinstance(prop, ObservablePropertyFloat)}
+            total_size = 0
+            capacity = record_max_duration * self._fps
+            for obs in observables.values():
+                float_size = obs.dtype.itemsize 
+                total_size += float_size * capacity
+            self._observation_recorder = DataRecorder(ObservablePropertyConverter.observables_to_dict(self._selected_observables), capacity)
         self._stop_loop = False
         self._is_loop_running = True
         self._actions[RobotMonitorVMAction.APPLY].set_enabled(False)   
