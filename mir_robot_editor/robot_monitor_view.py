@@ -52,6 +52,12 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         self.btn_deselect_all = ToolButton("unselect_all", lambda: self.on_select_all_features_clicked(False), False, "Désélectionner tout")
         left_bar_toolbar.addWidget(self.btn_deselect_all)
         left_bar_toolbar.addStretch()
+        self.btn_record = QToolButton()
+        self.btn_record.setIcon(self._icon("record"))
+        self.btn_record.toggled.connect(self.on_show_fps_toggled)
+        self.btn_record.setCheckable(True)
+        self.btn_record.setEnabled(False)
+        left_bar_toolbar.addWidget(self.btn_record)
         left_bar.addLayout(left_bar_toolbar)
 
         self.options_layout = QVBoxLayout()
