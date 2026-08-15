@@ -52,11 +52,13 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         self.btn_deselect_all = ToolButton("unselect_all", lambda: self.on_select_all_features_clicked(False), False, "Désélectionner tout")
         left_bar_toolbar.addWidget(self.btn_deselect_all)
         left_bar_toolbar.addStretch()
+        _checked_btn_style = "QToolButton:checked { background-color: #FF8456; border-radius: 4px; }"
         self.btn_record = QToolButton()
         self.btn_record.setIcon(self._icon("record"))
-        self.btn_record.toggled.connect(self.on_show_fps_toggled)
+        #self.btn_record.toggled.connect(self.on_record_toggled)
         self.btn_record.setCheckable(True)
         self.btn_record.setEnabled(False)
+        self.btn_record.setStyleSheet(_checked_btn_style)
         left_bar_toolbar.addWidget(self.btn_record)
         left_bar.addLayout(left_bar_toolbar)
 
@@ -65,10 +67,12 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         scroll_content = QWidget()
         scroll_content.setLayout(self.options_layout)
         scroll_area = QScrollArea()
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll_area.setWidget(scroll_content)
         scroll_area.setWidgetResizable(True)
-        left_bar.addWidget(scroll_area)
-        
+        scroll_area.setMinimumWidth(170)
+        left_bar.addWidget(scroll_area, 1)
+
         fps_edit = QHBoxLayout()
         self.tb_fps = QLineEdit("50")
         self.tb_fps.setFixedWidth(40)
@@ -79,6 +83,7 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         self.btn_show_fps.toggled.connect(self.on_show_fps_toggled)
         self.btn_show_fps.setCheckable(True)
         self.btn_show_fps.setEnabled(False)
+        self.btn_show_fps.setStyleSheet(_checked_btn_style)
         fps_edit.addWidget(QLabel("fps cible"))
         fps_edit.addWidget(self.tb_fps)
         fps_edit.addWidget(self.btn_show_fps)
@@ -110,7 +115,7 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         left_bar.addWidget(toolbar)
         left_bar.addLayout(fps_edit)
         left_bar.addWidget(self.fps_frame)
-        left_bar.addStretch()
+
 
         # --- au centre les graphiques des observations  ---
         self.observations_widgets = ObservationsWidget(self._state_saved_view)
@@ -224,3 +229,5 @@ class RobotMonitorView(QWidget, ViewBase[RobotMonitorViewModel, RobotMonitorVMAc
         self.btn_show_fps.setEnabled(is_enabled)
         self.btn_select_all.setEnabled(is_enabled)
         self.btn_deselect_all.setEnabled(is_enabled)
+        self.btn_record.setEnabled(is_enabled)
+        
