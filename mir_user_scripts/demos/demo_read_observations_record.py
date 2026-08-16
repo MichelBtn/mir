@@ -21,8 +21,8 @@ for name, entry in metadata.items():
         std = np.std(array)
         info=(f"Min={min:.1f} Max={max:.1f} Mean={mean:.1f} Std={std:.1f}")
         axs[idx].plot(timestamps, array)
-        axs[idx].set_title(f"{name} : {info}", fontsize=9)  # Ajoute un titre à la figure
-        axs[idx].set_ylim(ymin, ymax) # Exemple : force l'échelle entre 0 et 1
+        axs[idx].set_title(f"{name} : {info}", fontsize=9) 
+        axs[idx].set_ylim(ymin, ymax)
         axs[idx].set_ylabel(entry['unit'],fontsize=9)
         axs[idx].tick_params(axis='both', labelsize=8) 
         axs[idx].grid(True)
