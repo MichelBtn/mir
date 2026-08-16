@@ -154,7 +154,7 @@ class RobotMonitorViewModel(ViewModelBase[RobotMonitorVMAction]):
         self.observations_accepted.emit(self._selected_observables)   
         if self._robot is None:
             raise RuntimeError("Le robot n'a pas été créé")  
-        self._robot.select_observables(self._selected_observables)        
+        self._robot.enable_observations(self._selected_observables)        
         self._actions[RobotMonitorVMAction.START].set_enabled(True)   
         
     def stop(self):

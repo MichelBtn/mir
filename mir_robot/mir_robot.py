@@ -3,7 +3,7 @@ from typing import Any
 from loguru import logger
 from typing_extensions import override
 from lerobot.robots import Robot
-from mir_devices.mir_device import mirDevices, ObservableProperty, DeviceAction
+from mir_devices.mir_device import mirDevices, ObservableProperty, DeviceAction, ObservablePropertyConverter
 from mir_devices.mir_devices_factory import ImirDevicesFactory, DefaultDevicesFactory
 from mir_robot.mir_robot_config import mirRobotConfig
 from mir_devices.mir_feetech_motor_bus import ImirFeetechMotorBus
@@ -22,7 +22,7 @@ class mirRobot(Robot):
         self.calibration_dir = Path()
         super().__init__(config)
         self._config = config
-
+        self._enabled_observables: dict[str, ObservableProperty] = {}
         # création motor bus        
         if devices_factory is None:
             devices_factory = DefaultDevicesFactory()
@@ -33,9 +33,21 @@ class mirRobot(Robot):
     def get_observables(self) -> dict[str, ObservableProperty]:
         return self._observables
 
-    def select_observables(self, selected : dict[str, ObservableProperty]) -> None:
-        self._selected_observables = selected
+    def enable_observations(self, selected : dict[str, ObservableProperty]) -> None:
+        self._enabled_observables = selected
         self._devices.subscribe_to_observables(selected) 
+
+    def enable_observations_by_name(self, names : list[str]) -> None:
+        selected = {name: self._observables[name] for name in names}
+        self._enabled_observables = selected
+        self._devices.subscribe_to_observables(selected) 
+
+    def enable_all_observations(self) -> None:
+        self._enabled_observables = self._observables
+        self._devices.subscribe_to_observables(self._observables) 
+
+    def get_enabled_observables(self) -> dict[str, dict[str, str]]:
+        return ObservablePropertyConverter.observables_to_dict(self._enabled_observables)
 
     def _device_name_from_feature_name(self, feature_name: str) -> str:
         return feature_name.split(".")[0]

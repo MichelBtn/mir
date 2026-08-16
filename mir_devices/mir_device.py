@@ -44,6 +44,15 @@ class ObservablePropertyConverter :
                 "unit": property.unit,
                 "dtype": property.dtype
             }
+        elif isinstance(property, ObservablePropertyBitmap):
+            return {
+                "type": property.stype,
+            }
+        elif isinstance(property, ObservablePropertyPolar):
+            return {
+                "type": property.stype,
+                "max_range": property.max_range
+            }
         raise NotImplementedError(f"ObservableProperty type {type(property)} not supported")
 
     @classmethod

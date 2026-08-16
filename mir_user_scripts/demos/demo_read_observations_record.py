@@ -3,11 +3,13 @@ from pathlib import Path
 from mir_utils.metrics import DataRecorder
 import matplotlib.pyplot as plt
 
-path = Path(__file__).parent.parent.parent / "data/rec.npz"
+path = Path(__file__).parent / "rec.npz"
 data, metadata = DataRecorder.load(path)    
 
 fig, axs = plt.subplots(len(metadata), 1, figsize=(6, len(metadata)*2))
 idx = 0
+timestamps = data["__timestamps__"]
+
 for name, entry in metadata.items():
     array = data[name]
     if isinstance(array, np.ndarray):
@@ -18,7 +20,7 @@ for name, entry in metadata.items():
         mean = np.mean(array)
         std = np.std(array)
         info=(f"Min={min:.1f} Max={max:.1f} Mean={mean:.1f} Std={std:.1f}")
-        axs[idx].plot(array)
+        axs[idx].plot(timestamps, array)
         axs[idx].set_title(f"{name} : {info}", fontsize=9)  # Ajoute un titre à la figure
         axs[idx].set_ylim(ymin, ymax) # Exemple : force l'échelle entre 0 et 1
         axs[idx].set_ylabel(entry['unit'],fontsize=9)

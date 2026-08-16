@@ -1,6 +1,12 @@
 import threading
 import math
 import numpy as np
+import io
+import zipfile
+from typing import Any
+import json
+from pathlib import Path
+import time
 
 #moyenne glissante
 class SimpleMovingAverage:
@@ -143,32 +149,38 @@ class RollingArray:
         with self._lock:
             return self._samples_count, self._buffer.copy()
 
-import numpy as np
-from typing import Any, TypeAlias
-import json
-from pathlib import Path
 
 class DataRecorder:
     def __init__(self, observables: dict[str, dict[str, Any]], capacity: int):
-        self._observables = observables
+        self._observables = {
+            name: prop 
+            for name, prop 
+            in observables.items() 
+            if prop["type"] == "float"
+        }
         self._capacity = capacity
-        self._count = 0
+        
 
         self._data: dict[str, np.ndarray] = {
-            name: np.empty(capacity, dtype=prop["dtype"]) for name, prop in observables.items()
+            name: np.empty(capacity, dtype=prop["dtype"]) 
+            for name, prop in self._observables.items()
         }
+        timestamps: np.ndarray = np.empty(capacity, dtype=np.float64)
+        self._data["__timestamps__"] = timestamps
+        self.start()
+    
+    def start(self):
+        self._start_time = time.perf_counter()
+        self._count = 0
 
     def append(self, observations: dict[str, float|np.ndarray]) -> None:
         if self._count >= self._capacity:
             return
 
-        if observations.keys() != self._observables.keys():
-            raise ValueError(
-                f"Clés attendues {set(self._observables.keys())}, reçues {set(observations.keys())}"
-            )
-
         for name, value in observations.items():
-            self._data[name][self._count] = value
+            if name in self._data:
+                self._data[name][self._count] = value
+        self._data["__timestamps__"][self._count] = time.perf_counter() - self._start_time
 
         self._count += 1
 
@@ -182,30 +194,44 @@ class DataRecorder:
     def is_full(self) -> bool:
         return self._count >= self._capacity
 
+    #     return data, metadata
     def save(self, path: str | Path) -> None:
-        """Sauvegarde données et métadonnées dans un seul fichier '<path>.npz'."""
+        """Sauvegarde les données (un .npy par observable) et les métadonnées
+        (metadata.json) dans une archive '<path>.npz'."""
+
+        def write_array(zf, name):
+            buffer = io.BytesIO()
+            np.save(buffer, self.get(name))
+            zf.writestr(f"{name}.npy", buffer.getvalue())
+
         path = Path(path)
 
-        arrays = {name: self.get(name) for name in self._observables}
-
-        # dtype numpy -> str pour rendre le dict sérialisable en JSON
         serializable_observables = {
             name: {**prop, "dtype": np.dtype(prop["dtype"]).name}
             for name, prop in self._observables.items()
         }
-        metadata_json = json.dumps(serializable_observables)
+        metadata_json = json.dumps(serializable_observables, indent=2)
 
-        all_arrays: dict[str, np.ndarray] = {**arrays, "__metadata__": np.array(metadata_json)}
-        np.savez(path, **all_arrays)  # pyrefly: ignore
+        with zipfile.ZipFile(path, mode="w") as zf:
+            zf.writestr("metadata.json", metadata_json)
+            for name in self._observables:
+                write_array(zf, name)
+            write_array(zf, "__timestamps__")
 
     @classmethod
     def load(cls, path: str | Path) -> tuple[dict[str, np.ndarray], dict[str, dict[str, Any]]]:
-        """Charge données et métadonnées depuis un fichier '<path>.npz'."""
+        """Charge données et métadonnées depuis une archive '<path>.npz'."""
         path = Path(path)
 
-        with np.load(path) as npz:
-            metadata = json.loads(str(npz["__metadata__"]))
-            data = {name: npz[name] for name in npz.files if name != "__metadata__"}
+        with zipfile.ZipFile(path, mode="r") as zf:
+            metadata = json.loads(zf.read("metadata.json").decode("utf-8"))
+
+            data: dict[str, np.ndarray] = {}
+            for info in zf.infolist():
+                if info.filename.endswith(".npy"):
+                    name = info.filename[:-len(".npy")]
+                    buffer = io.BytesIO(zf.read(info.filename))
+                    data[name] = np.load(buffer)
 
         return data, metadata
 
