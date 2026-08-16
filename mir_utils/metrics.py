@@ -185,16 +185,9 @@ class DataRecorder:
         self._count += 1
 
     def get(self, name: str) -> np.ndarray:
-        """Vue tronquée (sans copie) sur les observations valides d'un observable."""
+        """Vue des données effectivement ajoutées"""
         return self._data[name][: self._count]
 
-    def as_dict(self) -> dict[str, np.ndarray]:
-        return {name: self.get(name) for name in self._observables}
-
-    def is_full(self) -> bool:
-        return self._count >= self._capacity
-
-    #     return data, metadata
     def save(self, path: str | Path) -> None:
         """Sauvegarde les données (un .npy par observable) et les métadonnées
         (metadata.json) dans une archive '<path>.npz'."""
