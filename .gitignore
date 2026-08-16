@@ -46,6 +46,7 @@ check_bare_imports.py
 package-lock.json
 package.json
 *~lock.*
+*.npz
 
 
 

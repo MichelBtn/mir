@@ -45,4 +45,3 @@
 - [x] pouvoir appliquer la calibration des moteurs à la configuration en cours
 - [x] pouvoir appliquer une rotation à l'image caméra
 - [ ] la taille et la shape de l'image doivent être obtenus de la caméra
-- [ ] configuration 

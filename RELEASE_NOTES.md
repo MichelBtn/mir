@@ -1,3 +1,8 @@
+##### 16/08/2026. enregistrement des observations
+avec la classe DataRecorder
+
+##### 15/08/2026. la liste des observations est scrollable pour éviter que la fenêtre de dépasse de l'écran.
+
 ##### 02/08/2026. image caméra dans la fenêtre de configuration (scan devices)
 
 ##### 02/08/2026. rotation de l'image caméra affichée
