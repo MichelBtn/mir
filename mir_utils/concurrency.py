@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, Future
-from typing import Callable, TypeVar
+from typing import Any, Callable, Tuple, TypeVar
 from PySide6.QtCore import QObject, Signal
 
 T = TypeVar("T")
@@ -19,12 +19,12 @@ class BackgroundTask(QObject):
         self.finished.connect(on_finished)
         self.failed.connect(on_failed)
 
-    def run(self, fn: Callable[[], T]) -> None:
-        self._future = self._executor.submit(self._execute, fn)
+    def run(self, fn: Callable[..., T], fn_args: Tuple[Any, ...] = ()) -> None:
+        self._future = self._executor.submit(self._execute, fn, fn_args)
 
-    def _execute(self, fn: Callable[[], T]) -> None:
+    def _execute(self, fn: Callable[..., T], fn_args: Tuple[Any, ...]) -> None:
         try:
-            result = fn()
+            result = fn(*fn_args)
         except Exception as e:
             self.failed.emit(e)
         else:
@@ -60,15 +60,19 @@ class BackgroundWorker:
 
     def run(
         self,
-        fn: Callable[[], T],
+        fn: Callable[..., T],
         on_finished: Callable[[T], None],
         on_failed: Callable[[Exception], None] | None = None,
         guard_flag_owner: object | None = None,
         guard_flag: str | None = None,
+        fn_args: Tuple[Any, ...] = (),
     ) -> None:
         """
-        Lance fn() dans le thread de fond. on_finished/on_failed sont
+        Lance fn(*fn_args) dans le thread de fond. on_finished/on_failed sont
         rappelés sur le thread GUI une fois l'opération terminée.
+
+        fn_args : tuple d'arguments positionnels transmis à fn (défaut : ()).
+        Pratique pour éviter d'encapsuler fn dans une lambda.
 
         guard_flag_owner/guard_flag : objet et nom d'attribut bool
         optionnels, mis à True avant le lancement et remis à False après
@@ -98,7 +102,7 @@ class BackgroundWorker:
             _wrap(on_failed if on_failed is not None else _default_failed),
         )
         self._tasks_in_flight.add(task)
-        task.run(fn)
+        task.run(fn, fn_args)
 
     def shutdown(self, wait: bool = False):
         self._executor.shutdown(wait=wait)
