@@ -129,7 +129,7 @@ class SerialPort(CommPort):
             self.ser.timeout = 1.0
             start = time.time()
             quiet_time = 0
-            while time.time() - start < 10.0:     # timeout de sécurité 10s
+            while time.time() - start < 15.0:     # timeout de sécurité 10s
                 time.sleep(0.1)
                 if self.ser.in_waiting == 0:
                     quiet_time += 0.1
