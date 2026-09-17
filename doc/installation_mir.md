@@ -9,13 +9,8 @@ voir documents installation_lerobot_linux.pdf et installation_lerobot_windows.pd
 sous linux : depuis le terminal
 sous windows : depuis Miniforge Prompt
 
-si ce n'est déjà fait créer une clé SSH sur la machine cible avec ssh-keygen   
-valider les options proposées (fichier id_ed25519.pub), notrer le mot de passe si entré (déconseillé)   
-copier le contenu du fichier .pub  
-demander à MichelBtn d'ajouter la clé SSH sur github    
-
 ```bash
-git clone git@github.com:MichelBtn/mir.git  
+git clone https://github.com/MichelBtn/mir
 ```
 
 --- 
