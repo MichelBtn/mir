@@ -4,30 +4,14 @@
 
 ### construisez votre robot en quelques clics
 
-OS supporté : Linux only
+OS supportés : Linux, Windows
 
-###
-installation :  
-#### cloner le dépot  
-si ce n'est déjà fait créer une clé SSH sur la machine cible:   
-ssh-keygen   
-valider les options proposées (fichier id_ed25519.pub), notrer le mot de passe si entré (déconseillé)   
-copier le contenu du fichier .pub  
-ajouter la clé SSH sur github    
-git clone git@github.com:MichelBtn/mir.git  
+### installation :  
+voir procédures dans dossier *doc*:  
+installation_lerobot_windows.pdf   
+installation_lerobot_linux.pdf   
+installation_mir.pdf
 
-#### activer l'environnement conda lerobot  
-
-#### linux :  
-depuis le dossier racine du projet, exécuter install.sh  (faire ./install.sh)
-
-#### windows :  
-depuis le dossier racine du projet, exécuter install.bat  
-
-pour réutiliser la librairie mir_utils (pas de dépendance lerobot):   
-pip install -e "git+ssh://git@github.com/MichelBtn/mir.git#subdirectory=mir_utils"   
-ou en local, après installation comme ci-dessus :
-pip install -e /chemin/local/mir/mir_utils   
 
 ## Citation
 
