@@ -581,7 +581,9 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         sinon retourne (None, None)
         """
         ports = find_acm_serial_ports()
+        print(ports)
         for port in ports:
+            print(f"scanning port {port}...")
             try:
                 motors_ids = mirFeetechMotorsBus.mir_scan_motors(port)
                 return (port, motors_ids)
