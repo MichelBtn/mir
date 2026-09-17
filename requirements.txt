@@ -3,4 +3,6 @@ loguru
 dacite
 fabric
 esptool
+psutil
+matplotlib
 

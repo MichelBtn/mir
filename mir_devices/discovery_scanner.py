@@ -6,9 +6,7 @@ import itertools
 from concurrent.futures import ThreadPoolExecutor
 from loguru import logger
 import ipaddress
-import fcntl
-import struct
-import os
+import psutil
 from dataclasses import dataclass
 from lerobot.motors import MotorNormMode
 from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirMotorBusConfiguration, mirMotor
@@ -21,11 +19,6 @@ from mir_devices.mir_sensor import (mirPiCameraConfiguration,
 DISCOVERY_PORT = 5679           # port d'écoute des équipements
 REPLY_PORT     = 5678           # port sur lequel le PC reçoit les réponses
 MAGIC          = b"mir_discover_request\n"
-SIOCGIFADDR = 0x8915
-SIOCGIFNETMASK = 0x891B
-SIOCGIFFLAGS = 0x8913
-IFF_UP = 0x1
-IFF_LOOPBACK = 0x8
 
 """
 un équipement répond à un requête de découverte avec :
@@ -88,57 +81,38 @@ class DiscoveryScanner():
             logger.warning(f"[Scanner] Parse échoué pour {ip} : {e!r}")
             return None, None
 
-    def _get_iface_ipv4(self, sock: socket.socket, ifname: str) -> tuple[str, str] | None:
-        """Retourne (ip, netmask) pour une interface, ou None si indisponible."""
-        try:
-            ip = socket.inet_ntoa(fcntl.ioctl(
-                sock.fileno(),
-                SIOCGIFADDR,
-                struct.pack('256s', ifname[:15].encode())
-            )[20:24])
-            netmask = socket.inet_ntoa(fcntl.ioctl(
-                sock.fileno(),
-                SIOCGIFNETMASK,
-                struct.pack('256s', ifname[:15].encode())
-            )[20:24])
-            return ip, netmask
-        except OSError:
-            # Pas d'IPv4 sur cette interface (down, ou IPv6 seulement, etc.)
-            return None
-
-    def _iface_is_up_and_not_loopback(self, sock: socket.socket, ifname: str) -> bool:
-        try:
-            flags = struct.unpack(
-                'H',
-                fcntl.ioctl(
-                    sock.fileno(),
-                    SIOCGIFFLAGS,
-                    struct.pack('256s', ifname[:15].encode())
-                )[16:18]
-            )[0]
-            return (flags & IFF_UP) and not (flags & IFF_LOOPBACK)
-        except OSError:
-            return False
-
     def get_broadcast_addresses(self) -> list[str]:
         """Renvoie la liste des adresses de broadcast dirigé pour toutes
-        les interfaces IPv4 actives (hors loopback)."""
-        broadcasts: list[str] = []
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            for ifname in os.listdir('/sys/class/net/'):
-                if not self._iface_is_up_and_not_loopback(sock, ifname):
-                    continue
-                result = self._get_iface_ipv4(sock, ifname)
-                if result is None:
-                    continue
-                ip, netmask = result
-                try:
-                    net = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
-                    broadcasts.append(str(net.broadcast_address))
-                except ValueError as e:
-                    logger.warning(f"Impossible de calculer le broadcast pour {ifname}: {e}")
+        les interfaces IPv4 actives (hors loopback). Compatible Linux, Windows et macOS."""
+        broadcasts: set[str] = set()
+        try:
+            stats = psutil.net_if_stats()
+            addrs = psutil.net_if_addrs()
+        except Exception as e:
+            logger.warning(f"Erreur lors de la lecture des interfaces réseau : {e}")
+            return ["255.255.255.255"]
 
-        return broadcasts
+        for ifname, net_stats in stats.items():
+            if not net_stats.isup:
+                continue
+            if ifname not in addrs:
+                continue
+
+            for addr in addrs[ifname]:
+                if addr.family == socket.AF_INET and not addr.address.startswith("127."):
+                    if addr.broadcast:
+                        broadcasts.add(addr.broadcast)
+                    elif addr.netmask:
+                        try:
+                            net = ipaddress.IPv4Network(f"{addr.address}/{addr.netmask}", strict=False)
+                            broadcasts.add(str(net.broadcast_address))
+                        except ValueError as e:
+                            logger.warning(f"Impossible de calculer le broadcast pour {ifname} ({addr.address}): {e}")
+
+        if not broadcasts:
+            broadcasts.add("255.255.255.255")
+
+        return list(broadcasts)
 
     def _scan_ip_devices(self) -> dict[str, mirSensorConfiguration]:
         self._stop_scan = False

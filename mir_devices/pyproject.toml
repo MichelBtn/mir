@@ -3,7 +3,7 @@
 [project]
 name = "mir_devices"
 version = "0.1.0"
-dependencies = ["mir_utils"]
+dependencies = ["mir_utils", "psutil"]
 
 [build-system]
 requires = ["setuptools"]
