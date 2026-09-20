@@ -131,7 +131,8 @@ ACTION_VELOCITY_SUFFIX = "velocity"
 
 class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
    
-    _bus_connected = False
+    _bus_connected : dict[str, bool] = {}
+    
     def __init__(self, config: mirMotorBusConfiguration):
         mirDevice.__init__(self)
         self._config = config
@@ -206,12 +207,12 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         return same_ranges and same_offsets and same_ids
     
     def mir_connect(self):
-        if mirFeetechMotorsBus._bus_connected:
+        if mirFeetechMotorsBus._bus_connected.get(self._config.motor_port, False):
             raise ConnectionError("Le bus est déjà connecté")
         try :
             super().connect(True)   
             self._mir_is_ready = True
-            mirFeetechMotorsBus._bus_connected = True
+            mirFeetechMotorsBus._bus_connected[self._config.motor_port] = True
             positions = self.mir_read_positions()
             velocities = self.mir_read_velocities()
             for motor_name, motor_cfg in self._mir_motors.items():
@@ -232,7 +233,7 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
     def mir_disconnect(self):
         if self.is_connected:
             super().disconnect(False)
-        mirFeetechMotorsBus._bus_connected = False
+        mirFeetechMotorsBus._bus_connected[self._config.motor_port] = False
 
     def mir_is_connected(self) -> bool:
         return super().is_connected
@@ -555,11 +556,9 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
 
     @staticmethod
     def mir_scan_motors(port:str) -> list[int]:
-        if mirFeetechMotorsBus._bus_connected:
+        if mirFeetechMotorsBus._bus_connected.get(port, False):
             raise ConnectionError("Le bus est déjà connecté")
 
-        if mirFeetechMotorsBus._bus_connected:
-            raise ConnectionError("Le bus est déjà connecté")
         bus: mirFeetechMotorsBus | None = None
         try :
             bus = mirFeetechMotorsBus.mir_make_empty_bus(port)
