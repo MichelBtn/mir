@@ -2,7 +2,7 @@
 #include <Preferences.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
-
+#include "ble_provisioning.h"
 #include "command.h"
 #include "lwip/sockets.h"
 #include "sensor_simulation.h"
@@ -42,6 +42,8 @@ const uint16_t DISCOVERY_RESPONSE_PORT = 5678;
 char short_response[256];
 char arg_short_response[256];
 bool wifi_connected;
+
+BleProvisioning bleProv;
 
 enum class CommandSource : uint8_t {
   SerialOnly,
@@ -208,6 +210,25 @@ void set_ap_configuration(Stream& stream, const Command& command) {
   send_response(stream, "set_ap_configuration", "status=success");
 }
 
+// Callback du provisioning BLE : stocke les identifiants reçus comme
+// set_ap_configuration (paramètres ap1_ssid / ap1_pwd), puis reboot
+// pour reconnexion avec les nouveaux identifiants.
+void on_ble_provisioning_credentials(const String& ssid, const String& pwd) {
+  set_str_value(ap1_ssid, sizeof(ap1_ssid), ssid);
+  // Le mot de passe peut être vide (réseau ouvert) : on l'accepte.
+  strncpy(ap1_pwd, pwd.c_str(), sizeof(ap1_pwd) - 1);
+  ap1_pwd[sizeof(ap1_pwd) - 1] = '\0';
+  save_configuration();
+  Serial.print("BLE provisioning : identifiants sauvegardés (ap1_ssid=");
+  Serial.print(ap1_ssid);
+  Serial.println("). Redémarrage pour reconnexion...");
+  bleProv.notifyStatus("SUCCESS:rebooting");
+  delay(500);
+  bleProv.stop();
+  delay(200);
+  ESP.restart();
+}
+
 void reboot(Stream& stream) {
   send_response(stream, "reboot", "status=success");
   delay(100);
@@ -336,6 +357,10 @@ void setup() {
 
   load_configuration();
   print_configuration();
+  // Provisioning BLE démarré AVANT la connexion WiFi pour fonctionner
+  // en parallèle du point d'accès actuel (fenêtre de 60 s après le boot).
+  bleProv.onCredentials(on_ble_provisioning_credentials);
+  bleProv.begin("MIR_" + String(sensor_id));
   wifi_connected = connect_to_ap(ap1_ssid, ap1_pwd, ap1_ip);
   if (!wifi_connected)
     wifi_connected = connect_to_ap(ap2_ssid, ap2_pwd, ap2_ip);
@@ -377,6 +402,7 @@ void setup() {
 void loop() {
   static TickType_t last_wake = xTaskGetTickCount();
   vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(loop_period));
+  bleProv.handle();
   _sensor->update_data();
   handle_serial();
   if(wifi_connected) {
