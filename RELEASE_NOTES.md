@@ -1,3 +1,5 @@
+##### 20/09/2026. correctif : la deuxième instance de mirFeetechMotorBus générait une erreur "Bus déjà connecté"
+
 ##### 16/08/2026. enregistrement des observations
 avec la classe DataRecorder
 
