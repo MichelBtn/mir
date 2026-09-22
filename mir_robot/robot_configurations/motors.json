@@ -2,7 +2,7 @@
     "id": "mir_robot",
     "calibration_dir": null,
     "motor_bus": {
-        "motor_port": "/dev/ttyACM0",
+        "motor_port": "/dev/tty_motor_bus0",
         "motors": {
             "joint_1": {
                 "id": 2,
@@ -44,12 +44,7 @@
             }
         }
     },
-    "sensors": {
-        "esp_simulation_1": {
-            "sensor_type": "esp_simulation",
-            "ip": "192.168.1.26"
-        }
-    },
+    "sensors": {},
     "observations": {
         "esp_simulation_1.omega": "float",
         "esp_simulation_1.theta": "float",
