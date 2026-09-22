@@ -11,6 +11,7 @@ from mir_utils.ui.dialogs import IDialogProvider
 from mir_utils.concurrency import BackgroundWorker
 from mir_devices.communication_ports import find_usb_serial_ports
 from mir_devices.esp_sensors import EspSensor, EspSensorSimulationConfiguration
+from mir_esp_deploy.ble_provisioning import BleProvisioner
 
 # Chemin par défaut du firmware.
 DEFAULT_FIRMWARE_PATH: Path = (
@@ -33,6 +34,10 @@ class DeployVMAction(Enum):
     WRITE_CFG = auto()
     REFRESH_PORTS = auto()
 
+class DeployMode(Enum):
+    SERIAL = auto()
+    BLE = auto()
+
 @dataclass
 class SerialConfig:
     flash_baud_rate : int
@@ -45,7 +50,8 @@ class Esp32DeployViewModel(ViewModelBase[DeployVMAction]):
     config_loaded = Signal(dict)               # configuration AP lue
     log_added = Signal(str)                    # logs
     busy_changed = Signal(bool)                # état occupé
-
+    mode_changed = Signal(int)          # mode de connexion
+    
     def __init__(self, dialogProvider: IDialogProvider):
         super().__init__(dialogProvider)
         self._selected_port: str = ""
@@ -77,6 +83,7 @@ class Esp32DeployViewModel(ViewModelBase[DeployVMAction]):
             "esp32-cam" : SerialConfig(1000000, enable_rts_dtr=False, empty_loop=True)
         }
         self._serial_configuration_key: str = "esp32-wroom"
+        self._mode = DeployMode.SERIAL
         self._refresh_action_state()
 
     @override
@@ -96,6 +103,17 @@ class Esp32DeployViewModel(ViewModelBase[DeployVMAction]):
         self._refresh_action_state()
 
 
+    def set_mode(self, mode: DeployMode):
+        self._mode = mode
+        self.mode_changed.emit(mode.value)
+        self._refresh_action_state()
+
+    def get_mode(self):
+        return self._mode
+
+    def get_busy(self)->bool:
+        return self._busy
+        
     # ---------------------------------------------------------------- ports série
     def scan_ports(self) -> list[str]:
         try:
@@ -305,14 +323,10 @@ class Esp32DeployViewModel(ViewModelBase[DeployVMAction]):
         )
 
     def _write_ap_configuration(self, config, port, enable_rts_dtr, empty_loop):
-        self.log_added.emit(f"Connexion port série en cours : {port=}, {enable_rts_dtr=}, {empty_loop=}")
-        try:
-            sensor = self._create_serial_sensor()
-            sensor.mir_connect_serial(port, enable_rts_dtr=enable_rts_dtr, empty_loop=empty_loop)
-            self.log_added.emit("Ecriture configuration ap...")
-            success = sensor.write_ap_configuration(config)
-        finally:
-            return success
+        if self._mode == DeployMode.SERIAL:
+            return self._write_ap_configuration_serial(config, port, enable_rts_dtr, empty_loop)
+        else:
+            return self._write_ap_configuration_ble(config)
 
     def _on_write_ap_finished(self, success):
         self.log_added.emit("Ecriture ap configuration terminée")
@@ -330,3 +344,25 @@ class Esp32DeployViewModel(ViewModelBase[DeployVMAction]):
         self.status_changed.emit("Échec écriture ap configuration")
         self._dialogProvider.error("Échec écriture ap configuration", f"Erreur : {error}")
         self._set_busy(False)
+
+    def _write_ap_configuration_serial(self, config, port, enable_rts_dtr, empty_loop):
+        self.log_added.emit(f"Connexion port série en cours : {port=}, {enable_rts_dtr=}, {empty_loop=}")
+        try:
+            sensor = self._create_serial_sensor()
+            sensor.mir_connect_serial(port, enable_rts_dtr=enable_rts_dtr, empty_loop=empty_loop)
+            self.log_added.emit("Ecriture configuration ap...")
+            success = sensor.write_ap_configuration(config)
+        finally:
+            return success        
+
+    def _write_ap_configuration_ble(self, config):
+        ssid = config["ap1_ssid"]
+        pwd = config["ap1_pwd"]
+        if not ssid or not pwd or len(ssid.strip()) == 0 or len(pwd.strip()) == 0:
+            raise ValueError("Configuration Wi-Fi invalide")
+            
+        with BleProvisioner() as prov:
+            self.log_added.emit(f"Connexion BLE en cours...")
+            prov.connect()
+            self.log_added.emit("Ecriture configuration ap...")
+            return prov.set_ap(ssid, pwd)

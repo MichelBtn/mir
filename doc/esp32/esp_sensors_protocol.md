@@ -1,12 +1,12 @@
 # Documentation du Protocole de Communication (`esp32_sensor`)
 
-Ce document décrit en détail les protocoles d'échange et de communication exposés par le micrologiciel **`esp32_sensor`** (projet `mir`) à travers ses différents canaux d'E/S : Liaison série (UART), TCP texte (commandes), TCP binaire (flux de données capteur) et UDP (découverte réseau).
+Ce document décrit en détail les protocoles d'échange et de communication exposés par le micrologiciel **`esp32_sensor`** (projet `mir`) à travers ses différents canaux d'E/S : Liaison série (UART), TCP texte (commandes), TCP binaire (flux de données capteur), UDP (découverte réseau) et BLE (provisioning WiFi).
 
 ---
 
 ## 1. Vue d'ensemble des Transports & Canaux
 
-Le système utilise 4 canaux de communication distincts :
+Le système utilise 5 canaux de communication distincts :
 
 | Transport | Port | Type / Format | Usage principal | Restrictif / Spécificité |
 | :--- | :--- | :--- | :--- | :--- |
@@ -14,6 +14,7 @@ Le système utilise 4 canaux de communication distincts :
 | **TCP Commandes**| `5000` | Texte ASCII (`\n`) | Configuration à distance, interrogation | **Restreint** (Credentials WiFi interdits) |
 | **TCP Données** | `5001` | Binaire (Little-Endian) | Stream haute fréquence des données capteur | Flux binaire continu orienté trames |
 | **UDP Découverte**| `5679` (In)<br>`5678` (Out) | Texte ASCII / JSON | Auto-découverte des modules sur le réseau | Détection dynamique de l'IP du module |
+| **BLE Provisioning** | — (GATT) | GATT (Write / Read+Notify) | Provisioning WiFi sans fil au boot | **Accès complet** (SSID/PWD autorisés, fenêtre 60 s) |
 
 ### Paramètres Série
 - **Baudrate** : `115200` baud
@@ -114,9 +115,9 @@ Met à jour un ou plusieurs paramètres système et les sauvegarde en mémoire n
 
 ---
 
-#### C. Configuration WiFi & Sécurité (**Liaison Série UNIQUEMENT**)
+#### C. Configuration WiFi & Sécurité (**Liaison Série et BLE UNIQUEMENT**)
 
-Pour éviter que des identifiants réseau ne transitent en clair sur le réseau sans fil, les commandes ci-dessous sont **strictement rejetées lorsqu'elles sont reçues via TCP**.
+Pour éviter que des identifiants réseau ne transitent en clair sur le réseau WiFi/IP, les commandes ci-dessous sont **strictement rejetées lorsqu'elles sont reçues via TCP**. Les identifiants peuvent être configurés via la **liaison série** (commandes ci-dessous) ou via le **provisioning BLE** (voir §5 : écriture GATT SSID/PWD, stockée comme `ap1_ssid`/`ap1_pwd` puis reboot).
 
 ##### `get_ap_configuration`
 - **Port autorisé** : **Série uniquement**
@@ -257,7 +258,81 @@ L'ESP32 écoute sur le réseau local pour répondre automatiquement aux requête
 
 ---
 
-## 5. Résumé des Séquences et Exemples d'Échanges
+## 5. Provisioning WiFi via BLE (GATT)
+
+Le provisioning BLE permet de configurer le WiFi **sans liaison série**, depuis un client BLE (ex. `nRF Connect`, script Python `bleak`). Il est implémenté par la classe `BleProvisioning` (`include/ble_provisioning.h`, `src/ble_provisioning.cpp`, stack **Bluedroid** `BLEDevice`) et câblé dans `src/main.cpp` (`bleProv`, `on_ble_provisioning_credentials()`).
+
+> **Contrainte build** (`platformio.ini`) : Bluedroid augmente fortement la taille du firmware. La partition par défaut (2 × 1,25 Mo APP) ne suffit plus, le projet impose `board_build.partitions = no_ota.csv` (1 × 2 Mo APP, pas d'OTA).
+
+### 5.1. Fenêtre d'activité et cycle de vie
+
+- **Démarrage** : `bleProv.begin("MIR_ESP_SENSOR")` est appelé dans `setup()` **avant** `connect_to_ap()`, pour fonctionner **en parallèle** de la connexion WiFi STA en cours. Le nom BLE est tronqué à **28 caractères** (`BLE_PROV_NAME_MAX_LEN`).
+- **Fenêtre par défaut** : `DEFAULT_TIMEOUT_MS = 60 000 ms` (60 s après le boot). `bleProv.handle()` doit être appelé dans `loop()` : sans aucune demande pendant 60 s, log `BLE provisioning : aucune demande reçue pendant 60 s, arrêt.` puis `stop()`.
+- **Mode configuration persistant** : dès qu'une **connexion BLE** (`handleConnect()`) ou une **écriture SSID/PWD** (`handleWrite()`) est reçue pendant la fenêtre, `_configRequested = true` et le BLE **reste actif sans limite de durée** (`handle()` retourne immédiatement). Après déconnexion, l'advertising est relancé (`handleDisconnect()` → `BLEDevice::startAdvertising()`).
+- **Arrêt** : `stop()` coupe l'advertising, `BLEDevice::deinit(true)`, log `BLE provisioning arrêté.`. Sans effet si inactif.
+- **Coexistence WiFi + BLE** : tant que le BLE est actif, `WiFi.setSleep(WIFI_PS_MIN_MODEM)` est obligatoire (appliqué dans `begin()` et dans `connect_to_ap()` via `bleProv.isActive()`), sinon le driver WiFi aborte (`Should enable WiFi modem sleep when both WiFi and Bluetooth are enabled`). Après `stop()`, repassage en `WIFI_PS_NONE` (pleine performance WiFi).
+
+```
+   Boot ESP32
+     ├─ bleProv.begin("MIR_ESP_SENSOR") → advertising BLE (60 s)
+     ├─ connect_to_ap(ap1...) ─┐ (en parallèle, modem sleep MIN_MODEM)
+     │                         │
+   Client BLE ── connect ──→ _configRequested = true (mode persistant)
+     ├─ WRITE ssid → "RECEIVED_SSID"
+     ├─ WRITE pwd  → "RECEIVED_PWD" → paire complète → callback dans loop()
+     │               └─ save NVS ap1_ssid/ap1_pwd → NOTIFY "SUCCESS:rebooting"
+     │                  → stop() → ESP.restart() → reconnexion au nouvel AP
+     └─ sans demande pendant 60 s → stop() → suite normale WiFi/TCP/UDP
+```
+
+### 5.2. Service et caractéristiques GATT
+
+Un service + 3 caractéristiques, advertising avec `addServiceUUID()` + `setScanResponse(true)` :
+
+| Rôle | UUID | Propriétés | Description / Contraintes |
+| :--- | :--- | :--- | :--- |
+| **Service** | `e0f0c9a0-4d1a-4e8b-9f2c-abcdef123401` | — | Service unique de provisioning (annoncé en advertising). |
+| **SSID** | `e0f0c9a0-4d1a-4e8b-9f2c-abcdef123402` | `WRITE` | SSID du point d'accès. `trim()` appliqué, **tronqué à 32 car.** (`BLE_PROV_SSID_MAX_LEN`). Vide = ignoré (paire incomplète). |
+| **PWD** | `e0f0c9a0-4d1a-4e8b-9f2c-abcdef123403` | `WRITE` | Mot de passe. `trim()` appliqué, **tronqué à 64 car.** (`BLE_PROV_PWD_MAX_LEN`). **Vide accepté = réseau ouvert**, mais la caractéristique doit être écrite **au moins une fois** (même vide, flag `_pwdWritten`). |
+| **STATUS** | `e0f0c9a0-4d1a-4e8b-9f2c-abcdef123404` | `READ \| NOTIFY` (+ descripteur `BLE2902` / CCCD) | Statut texte ASCII, valeur initiale `WAIT_CREDENTIALS`. À lire après connexion et à surveiller via notifications (activer le CCCD `0x2902`). |
+
+Notes :
+- **Aucun appairage / chiffrement BLE** n'est configuré dans le code : SSID/PWD transitent en clair sur la radio locale. Réservé au provisioning de proximité, comme la liaison série.
+- L'ordre d'écriture **SSID/PWD est quelconque**. Seul le contenu est journalisé sur série par sa **longueur** (`SSID reçu (N car.)`, `mot de passe reçu (N car.)`), jamais en clair.
+- Les callbacks GATT s'exécutent dans le **contexte de la tâche BT** : ils ne font que lever des drapeaux (`_configRequested`, `_credentialsPending`). Le callback applicatif `onCredentials()` est exécuté dans `handle()` (**contexte `loop()`**), **après** l'envoi de la réponse ATT d'écriture. Sans cela le client recevrait une erreur GATT alors que la sauvegarde a réussi.
+
+### 5.3. Caractéristique STATUS : valeurs notifiées
+
+Envoyées par `notifyStatus()` (log série `BLE provisioning : <msg>` + `setValue()` + `notify()` si actif) :
+
+| Valeur | Émise quand |
+| :--- | :--- |
+| `WAIT_CREDENTIALS` | Valeur initiale à `begin()` ; renvoyée à chaque connexion BLE si aucun SSID reçu. |
+| `RECEIVED_SSID` | Écriture SSID reçue ; renvoyée à la connexion si un SSID est déjà mémorisé. |
+| `RECEIVED_PWD` | Écriture PWD reçue (même vide). |
+| `SUCCESS:rebooting` | Paire complète traitée par `on_ble_provisioning_credentials()` juste avant `stop()` + `ESP.restart()`. |
+
+### 5.4. Traitement applicatif (`main.cpp`)
+
+`on_ble_provisioning_credentials(ssid, pwd)` équivaut à `set_ap_configuration ap1_ssid=...;ap1_pwd=...` :
+1. Stocke `ssid` → `ap1_ssid` (via `set_str_value`, vide ignoré) et `pwd` → `ap1_pwd` (copie `strncpy`, vide accepté pour réseau ouvert).
+2. `save_configuration()` en NVS (namespace `sensor_cfg`).
+3. Log `BLE provisioning : identifiants sauvegardés (ap1_ssid=<ssid>). Redémarrage pour reconnexion...`.
+4. `notifyStatus("SUCCESS:rebooting")`, `delay(500)`, `bleProv.stop()`, `delay(200)`, `ESP.restart()` → reconnexion sur le nouvel AP au boot suivant.
+
+Seul le slot **AP1** est provisionné par BLE. Le slot AP2 reste configurable par liaison série.
+
+### 5.5. Exemple de session (avec `nRF Connect` / `bleak`)
+
+1. Au boot, repérer l'advertising **`MIR_ESP_SENSOR`** (service `...123401`) dans les 60 s (ou se connecter pour figer la fenêtre en mode persistant).
+2. Se connecter, activer les notifications sur STATUS (`...123404`, CCCD `0x2902`) → lire `WAIT_CREDENTIALS`.
+3. Écrire SSID sur `...123402` (ex. `MonReseau`) → notification `RECEIVED_SSID`.
+4. Écrire PWD sur `...123403` (ex. `Secret123`, ou valeur vide pour réseau ouvert) → notification `RECEIVED_PWD`.
+5. Attendre la notification `SUCCESS:rebooting` : l'ESP32 sauvegarde en NVS, coupe le BLE et reboote sur le nouvel AP. Si seul le SSID est écrit sans jamais écrire PWD, rien ne se passe (paire incomplète).
+
+---
+
+## 6. Résumé des Séquences et Exemples d'Échanges
 
 ### Exemple 1 : Lecture de la configuration via TCP (Port 5000)
 **Client $\to$ ESP32 (Port 5000)** :
@@ -287,6 +362,18 @@ set_ap_configuration ap1_ssid=MonReseau;ap1_pwd=Secret123\n
 **ESP32 $\to$ Terminal** :
 ```text
 #set_ap_configuration status=success\n
+```
+
+### Exemple 4 : Provisioning WiFi via BLE (GATT)
+**Client BLE $\to$ ESP32** (dans les 60 s après boot, nom `MIR_ESP_SENSOR`) :
+```text
+CONNECT + activer NOTIFY sur ...123404 → READ = "WAIT_CREDENTIALS"
+WRITE ...123402 = "MonReseau"   → NOTIFY "RECEIVED_SSID"
+WRITE ...123403 = "Secret123"   → NOTIFY "RECEIVED_PWD"
+```
+**ESP32 $\to$ Client BLE** :
+```text
+NOTIFY "SUCCESS:rebooting" puis reboot (connexion au nouvel AP1)
 ```
 
 ---
