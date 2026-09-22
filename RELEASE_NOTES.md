@@ -1,3 +1,9 @@
+##### 22/09/2026. dans mir_esp_deploy ajouté le BLE provisioning
+modification des identifiants du points d'accès Wifi en Bluetooth.
+
+##### 22/09/2026. documentation sur la persistence des ports séries.
+doc/serial_ports/Guide_Ports_Serie_Persistants.pdf
+
 ##### 20/09/2026. correctif : la deuxième instance de mirFeetechMotorBus générait une erreur "Bus déjà connecté"
 
 ##### 16/08/2026. enregistrement des observations

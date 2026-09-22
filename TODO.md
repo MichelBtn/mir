@@ -47,5 +47,5 @@
 - [ ] la taille et la shape de l'image doivent être obtenus de la caméra
 - [ ] compatibilité Windows
 - [ ] STS3215 sur ESP32
-- [ ] pouvoir changer les identifiants des points d'accès des EPS32 en liaison riado (wifi ou bluetooth)
+- [x] pouvoir changer les identifiants des points d'accès des EPS32 en liaison riado (wifi ou bluetooth)
 - [ ] associer de manière persistante un port série à un bus sts3215
