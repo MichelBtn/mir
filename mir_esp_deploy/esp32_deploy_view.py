@@ -10,12 +10,14 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QVBoxLayout,
     QWidget,
-    QToolButton
+    QToolButton,
+    QRadioButton,
+    QButtonGroup,
 )
 from PySide6.QtCore import Qt, Signal
 from mir_utils.ui.view_base import ViewBase
 from mir_utils.ui.widgets import MainWindowBase
-from mir_esp_deploy.esp32_deploy_view_model import Esp32DeployViewModel, DeployVMAction
+from mir_esp_deploy.esp32_deploy_view_model import Esp32DeployViewModel, DeployVMAction, DeployMode
 
 
 class PasswordEdit(QWidget):
@@ -138,13 +140,14 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         self._view_model.status_changed.connect(self._on_status_changed)
         self._view_model.log_added.connect(self._on_flash_output_received)
         self._view_model.busy_changed.connect(self._on_busy_changed)
-
+        self._view_model.mode_changed.connect(self._on_mode_changed)
         # Liaisons Vue → VM
         self._port_combo.currentIndexChanged.connect(self._on_port_changed)
         self._baud_combo.currentIndexChanged.connect(self._on_baud_rate_changed)
 
         # Initialisation
         self.update_ports(self._view_model.scan_ports())
+        self._update_controls()
 
     # --------------------------------------------------------------- construction
     def _build_ui(self):
@@ -159,6 +162,12 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         port_row = QWidget()
         port_layout = QHBoxLayout(port_row)
         port_layout.setContentsMargins(0, 0, 0, 0)
+        self._bgModes = QButtonGroup(self)
+        self._rbSelectSerial = QRadioButton("Port série")
+        self._rbSelectSerial.toggled.connect(lambda : self._view_model.set_mode(DeployMode.SERIAL if self._rbSelectSerial.isChecked() else DeployMode.BLE))
+        self._bgModes.addButton(self._rbSelectSerial)
+        port_layout.addWidget(self._rbSelectSerial)
+        
         self._port_combo = QComboBox()
         self._port_combo.setEditable(False)
         self._port_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -170,8 +179,12 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
             self._refresh_btn.setEnabled
         )
         port_layout.addWidget(self._refresh_btn)
-        target_form.addRow("Port série", port_row)
+        target_form.addRow(port_row)
 
+        baud_row = QWidget()
+        baud_layout = QHBoxLayout(baud_row)
+        baud_layout.setContentsMargins(0, 0, 0, 0)
+        self._lblbaud = QLabel("Modèle ESP32:")
         self._baud_combo = QComboBox()
         self._baud_combo.setEditable(False)
         for key, val in self._view_model.get_serial_configurations().items():
@@ -179,8 +192,20 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
         # Sélectionner la valeur courante du VM
         current_serial_cfg = self._view_model.get_serial_configuration()
         self._baud_combo.setCurrentText(current_serial_cfg)
-        target_form.addRow("Modèle ESP32", self._baud_combo)
+        baud_layout.addWidget(self._lblbaud)
+        baud_layout.addWidget(self._baud_combo,1)
+        target_form.addRow(baud_row)
 
+        ble_row = QWidget()
+        ble_layout = QHBoxLayout(ble_row)
+        ble_layout.setContentsMargins(0, 0, 0, 0)
+        self._rbBLE = QRadioButton("BLE Provisioning")
+        ble_layout.addWidget(self._rbBLE)
+        self._bgModes.addButton(self._rbBLE)
+        self._lblBLE = QLabel("Rebootez l'ESP32 avant d'appliquer la config (vous disposez de 60s après le reboot)")
+        ble_layout.addWidget(self._lblBLE, 1)        
+        target_form.addRow(ble_row)
+        
         # --- Identifiants Wi-Fi ---
         wifi_group = QGroupBox("Identifiants Wi-Fi")
         wifi_form = QFormLayout(wifi_group)
@@ -321,13 +346,29 @@ class Esp32DeployView(MainWindowBase, ViewBase[Esp32DeployViewModel, DeployVMAct
     def _on_status_changed(self, status: str):
         self._status_label.setText(status)
 
-    def _on_busy_changed(self, busy: bool):
-        self._port_combo.setEnabled(not busy)
-        self._baud_combo.setEnabled(not busy)
+    def _update_controls(self):
+        busy = self._view_model.get_busy()
+        mode = self._view_model.get_mode()
+        self._rbSelectSerial.setChecked(mode == DeployMode.SERIAL)
+        self._lblbaud.setEnabled(not busy and mode == DeployMode.SERIAL)
+        self._flash_btn.setEnabled(not busy and mode == DeployMode.SERIAL)
+        self._read_btn.setEnabled(not busy and mode == DeployMode.SERIAL)
+        self._write_btn.setEnabled(not busy)
+        self._port_combo.setEnabled(not busy and mode == DeployMode.SERIAL)
+        self._baud_combo.setEnabled(not busy and mode == DeployMode.SERIAL)
         self._ap1_ssid_edit.setEnabled(not busy)
         self._ap1_pwd_edit.setEnabled(not busy)
-        self._ap2_ssid_edit.setEnabled(not busy)
-        self._ap2_pwd_edit.setEnabled(not busy)
-        self._refresh_btn.setEnabled(not busy)
-        self._btn_swap_ap.setEnabled(not busy)
+        self._ap2_ssid_edit.setEnabled(not busy and mode == DeployMode.SERIAL)
+        self._ap2_pwd_edit.setEnabled(not busy and mode == DeployMode.SERIAL)
+        self._refresh_btn.setEnabled(not busy and mode == DeployMode.SERIAL)
+        self._btn_swap_ap.setEnabled(not busy and mode == DeployMode.SERIAL)
+        self._lblBLE.setEnabled(not busy and mode == DeployMode.BLE)
         self._can_close = not busy
+
+    def _on_busy_changed(self, busy: bool):
+        self._update_controls()
+        
+    def _on_mode_changed(self, mode: DeployMode):
+        self._update_controls()
+
+        

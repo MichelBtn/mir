@@ -120,7 +120,11 @@ void print_configuration() {
 }
 
 bool connect_to_ap(const char* ssid, const char* pwd, const char* ip_addr) {
-  WiFi.setSleep(WIFI_PS_NONE);
+  // Coexistence WiFi + BLE : le modem sleep DOIT rester activé tant que le
+  // BLE est actif, sinon le driver WiFi abort ("Should enable WiFi modem
+  // sleep when both WiFi and Bluetooth are enabled"). On le réactive en
+  // mode NONE une fois le BLE arrêté (voir BleProvisioning::stop()).
+  WiFi.setSleep(bleProv.isActive() ? WIFI_PS_MIN_MODEM : WIFI_PS_NONE);
   WiFi.mode(WIFI_STA);
   if (strcmp(ip_addr, "auto") != 0) {
     IPAddress ip;
@@ -360,7 +364,7 @@ void setup() {
   // Provisioning BLE démarré AVANT la connexion WiFi pour fonctionner
   // en parallèle du point d'accès actuel (fenêtre de 60 s après le boot).
   bleProv.onCredentials(on_ble_provisioning_credentials);
-  bleProv.begin("MIR_" + String(sensor_id));
+  bleProv.begin("MIR_ESP_SENSOR");
   wifi_connected = connect_to_ap(ap1_ssid, ap1_pwd, ap1_ip);
   if (!wifi_connected)
     wifi_connected = connect_to_ap(ap2_ssid, ap2_pwd, ap2_ip);

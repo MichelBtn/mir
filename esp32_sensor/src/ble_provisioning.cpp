@@ -4,6 +4,7 @@
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
+#include <WiFi.h>
 
 const char* BleProvisioning::SERVICE_UUID = "e0f0c9a0-4d1a-4e8b-9f2c-abcdef123401";
 const char* BleProvisioning::SSID_CHAR_UUID = "e0f0c9a0-4d1a-4e8b-9f2c-abcdef123402";
@@ -52,9 +53,13 @@ void BleProvisioning::begin(const String& deviceName) {
   _pwd = "";
   _pwdWritten = false;
   _configRequested = false;
+  _credentialsPending = false;
 
   String bleName = deviceName.substring(0, BLE_PROV_NAME_MAX_LEN);
 
+  // Coexistence WiFi + BLE : le modem sleep est obligatoire tant que le
+  // Bluetooth est activé (sinon abort du driver WiFi au WiFi.begin()).
+  WiFi.setSleep(WIFI_PS_MIN_MODEM);
   BLEDevice::init(bleName.c_str());
   BLEServer* server = BLEDevice::createServer();
   server->setCallbacks(new ServerCallbacks(this));
@@ -96,6 +101,18 @@ void BleProvisioning::handle() {
   if (!_active) {
     return;
   }
+  // Paire complète reçue : on exécute le callback ici (contexte loop()) et
+  // non dans le callback GATT (contexte tâche BT), pour que la réponse ATT
+  // d'écriture soit envoyée au client avant stop()/reboot. Sans cela, le
+  // client reçoit une erreur GATT alors que la sauvegarde a réussi.
+  if (_credentialsPending) {
+    _credentialsPending = false;
+    _pwdWritten = false;  // exige une paire fraîche pour un prochain cycle
+    if (_credentialsCb) {
+      _credentialsCb(_ssid, _pwd);
+    }
+    return;
+  }
   if (_configRequested) {
     return;  // mode configuration : reste actif aussi longtemps que nécessaire
   }
@@ -114,6 +131,8 @@ void BleProvisioning::stop() {
   _server = nullptr;
   BLEDevice::stopAdvertising();
   BLEDevice::deinit(true);
+  // BLE coupé : on peut repasser en pleine performance WiFi.
+  WiFi.setSleep(WIFI_PS_NONE);
   Serial.println("BLE provisioning arrêté.");
 }
 
@@ -126,6 +145,7 @@ void BleProvisioning::notifyStatus(const char* msg) {
     statusChar->notify();
   }
 }
+
 
 void BleProvisioning::handleConnect() {
   // Toute connexion pendant la fenêtre = demande de configuration.
@@ -161,7 +181,7 @@ void BleProvisioning::handleWrite(bool isSsid, const String& rawValue) {
     _pwd = value.substring(0, BLE_PROV_PWD_MAX_LEN);
     _pwdWritten = true;
     Serial.print("BLE provisioning : mot de passe reçu (");
-    Serial.print(_pwd.length());
+    Serial.print(_pwd.length()); 
     Serial.println(" car.).");
     notifyStatus("RECEIVED_PWD");
   }
@@ -171,10 +191,9 @@ void BleProvisioning::handleWrite(bool isSsid, const String& rawValue) {
 void BleProvisioning::tryComplete() {
   // SSID obligatoire, mot de passe optionnel (réseau ouvert accepté) : le
   // client doit écrire la caractéristique PWD au moins une fois (même vide).
+  // On ne fait que lever un drapeau : le callback est exécuté dans handle().
   if (_ssid.isEmpty() || !_pwdWritten) {
     return;
   }
-  if (_credentialsCb) {
-    _credentialsCb(_ssid, _pwd);
-  }
+  _credentialsPending = true;
 }

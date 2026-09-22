@@ -37,6 +37,8 @@ class BleProvisioning {
 
   // Enregistre le callback appelé dès que SSID + écriture PWD reçus.
   // L'ordre d'écriture SSID/PWD est quelconque.
+  // Note : le callback est invoqué depuis handle() (contexte loop()), jamais
+  // depuis les callbacks BLE : il peut donc stopper le BLE et rebooter.
   void onCredentials(CredentialsCallback cb) { _credentialsCb = cb; }
 
   // Démarre l'advertising BLE. À appeler avant (ou pendant) la connexion
@@ -72,6 +74,7 @@ class BleProvisioning {
   uint32_t _timeoutMs;
   volatile bool _active = false;
   volatile bool _configRequested = false;  // demande reçue pendant la fenêtre
+  volatile bool _credentialsPending = false;  // paire SSID/PWD complète, à traiter dans handle()
   bool _pwdWritten = false;                // écriture PWD reçue (même vide)
   unsigned long _startMs = 0;
   String _ssid = "";
