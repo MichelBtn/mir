@@ -46,6 +46,6 @@
 - [x] pouvoir appliquer une rotation à l'image caméra
 - [ ] la taille et la shape de l'image doivent être obtenus de la caméra
 - [ ] compatibilité Windows
-- [ ] STS3215 sur ESP32
+- [ ] STS3215 sur ESP32 (voir chat Gemini "Piloter des servomoteurs STS3215 avec ESP32")
 - [x] pouvoir changer les identifiants des points d'accès des EPS32 en liaison riado (wifi ou bluetooth)
 - [ ] associer de manière persistante un port série à un bus sts3215
