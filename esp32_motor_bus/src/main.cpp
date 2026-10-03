@@ -5,12 +5,10 @@
 #include "ble_provisioning.h"
 #include "command.h"
 #include "lwip/sockets.h"
-#include "sensor_simulation.h"
-#include "sensor_wheather.h"
-#include "sensor_lidar.h"
+#include "motor_bus.h"
 
 Preferences prefs;
-Sensor* _sensor;
+MotorBus* _motor_bus;
 char sensor_type[20];
 char sensor_id[32];
 char ap1_ssid[32];
@@ -295,6 +293,7 @@ void handle_tcp_data(uint8_t* buffer, uint16_t len) {
   }
 }
 
+
 void handle_serial() {
   while (Serial.available()) {
     char c = Serial.read();
@@ -392,7 +391,7 @@ void setup() {
   //déplacé l'initialisation du capteur, pour lui laisser du temps supplémentaire 
   //pour s'initialiser
   Serial.println("initializing sensor...");
-  if (_sensor->init())
+  if (_motor_bus->init())
     Serial.println("sensor initialized.");
   else
     Serial.println("sensor failed to initialize.");
@@ -405,11 +404,11 @@ void loop() {
   static TickType_t last_wake = xTaskGetTickCount();
   vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(loop_period));
   bleProv.handle();
-  _sensor->update_data();
+  _motor_bus->update_data();
   handle_serial();
   if(wifi_connected) {
     uint16_t len;
-    uint8_t* buffer = _sensor->get_data_frame(len);
+    uint8_t* buffer = _motor_bus->get_data_frame(len);
     handle_tcp_data(buffer, len);
     handle_tcp();
     handle_discovery();
