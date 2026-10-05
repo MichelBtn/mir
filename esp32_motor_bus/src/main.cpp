@@ -8,7 +8,7 @@
 #include "motor_bus.h"
 
 Preferences prefs;
-MotorBus* _motor_bus;
+
 char sensor_type[20];
 char sensor_id[32];
 char ap1_ssid[32];
@@ -29,6 +29,7 @@ const uint16_t TCP_DATA_PORT = 5001;
 WiFiServer    tcpDataServer(TCP_DATA_PORT);
 WiFiClient    tcp_data_client;
 
+
 String serial_buffer;
 String tcp_buffer;
 Command command;
@@ -42,6 +43,9 @@ char arg_short_response[256];
 bool wifi_connected;
 
 BleProvisioning bleProv;
+
+
+
 
 enum class CommandSource : uint8_t {
   SerialOnly,
@@ -86,14 +90,6 @@ void load_configuration() {
   }
   prefs.end();
 
-  if (strcmp(sensor_type, SensorLidar::sensor_type()) == 0)
-    _sensor = new SensorLidar(sensor_id);
-  else if (strcmp(sensor_type, SensorWheather::sensor_type()) == 0)
-    _sensor = new SensorWheather(sensor_id);
-  else {
-    set_str_value(sensor_type, sizeof(sensor_type), SensorSimulation::sensor_type());
-    _sensor = new SensorSimulation(sensor_id);
-  }
 }
 
 void print_configuration() {
@@ -146,11 +142,6 @@ bool connect_to_ap(const char* ssid, const char* pwd, const char* ip_addr) {
     Serial.println(" succeeded.");
   }
   return !timed_out;
-}
-
-void test() {
-  _sensor->update_data();
-  Serial.println(_sensor->read_data());
 }
 
 void save_configuration() {
@@ -260,9 +251,7 @@ void dispatch_command(Stream& stream, CommandSource source, const String& line) 
     send_response(stream, cmd.c_str(), "status=error;error=serial_only_command");
     return;
   }
-  if (cmd == "get_data") {
-    send_response(stream, "get_data", _sensor->read_data());
-  } else if (cmd == "set_configuration") {
+  if (cmd == "set_configuration") {
     set_configuration(stream, command);
   } else if (cmd == "set_ap_configuration") {
     set_ap_configuration(stream, command);
@@ -278,7 +267,7 @@ void dispatch_command(Stream& stream, CommandSource source, const String& line) 
   }
 }
 
-void handle_tcp_data(uint8_t* buffer, uint16_t len) {
+void handle_tcp_data_streaming(uint8_t* buffer, uint16_t len) {
   if (!tcp_data_client || !tcp_data_client.connected()) {
     if (tcp_data_client) tcp_data_client.stop();
     tcp_data_client = tcpDataServer.available();
@@ -306,7 +295,7 @@ void handle_serial() {
   }
 }
 
-void handle_tcp() {
+void handle_tcp_commands() {
   if (!client || !client.connected()) {
     if (client)
       client.stop();
@@ -323,6 +312,111 @@ void handle_tcp() {
       }
     }
   }
+}
+
+MotorBus* _motor_bus = new MotorBus();
+const uint16_t TCP_MOTOR_BUS_PORT = 5002;
+WiFiServer    tcpMotorBusServer(TCP_MOTOR_BUS_PORT);
+WiFiClient    tcp_motor_bus_client;
+enum class ActionState : uint8_t { WAIT_LEN_0, WAIT_LEN_1, WAIT_PAYLOAD };
+static ActionState  action_state   = ActionState::WAIT_LEN_0;
+static uint16_t     action_expected = 0;   // Taille payload attendue
+static uint16_t     action_received = 0;   // Octets payload déjà reçus
+constexpr uint16_t MAX_ACTION_SIZE = 255;
+uint8_t action_buf[MAX_ACTION_SIZE+1];
+
+void handle_tcp_motor_bus() {
+    
+
+    if (!tcp_motor_bus_client || !tcp_motor_bus_client.connected()) {
+        if (tcp_motor_bus_client)
+            tcp_motor_bus_client.stop();
+
+        tcp_motor_bus_client = tcpMotorBusServer.available();
+
+        if (tcp_motor_bus_client) {
+            tcp_motor_bus_client.setNoDelay(true);
+
+            // Reset de l'état à chaque nouvelle connexion
+            action_state = ActionState::WAIT_LEN_0;
+            action_expected = 0;
+            action_received = 0;
+
+            Serial.println("TCP motor bus client connected.");
+        }
+    }
+
+    if (!tcp_motor_bus_client || !tcp_motor_bus_client.connected())
+        return;
+
+    while (tcp_motor_bus_client.available()) {
+        uint8_t byte = tcp_motor_bus_client.read();
+
+        switch (action_state) {
+
+        case ActionState::WAIT_LEN_0:
+            action_expected = (uint16_t)byte << 8;
+            action_state = ActionState::WAIT_LEN_1;
+            break;
+
+        case ActionState::WAIT_LEN_1:
+            action_expected |= byte;
+
+            // Les trames applicatives sont limitées à 255 octets.
+            if (action_expected > MAX_ACTION_SIZE) {
+                Serial.print("TCP motor bus: frame too large: ");
+                Serial.println(action_expected);
+
+                // On abandonne cette trame.
+                action_state = ActionState::WAIT_LEN_0;
+                action_expected = 0;
+                action_received = 0;
+                break;
+            }
+
+            action_received = 0;
+
+            if (action_expected > 0) {
+                action_state = ActionState::WAIT_PAYLOAD;
+            } else {
+                // Longueur nulle : trame ignorée
+                action_state = ActionState::WAIT_LEN_0;
+            }
+
+            break;
+
+        case ActionState::WAIT_PAYLOAD:
+            action_buf[action_received++] = byte;
+
+            if (action_received >= action_expected) {
+                MotorBusResponseFrame response =
+                    _motor_bus->parse_and_run(
+                        action_buf,
+                        action_received
+                    );
+
+                uint8_t hdr[2] = {
+                    uint8_t(response.len >> 8),
+                    uint8_t(response.len & 0xFF)
+                };
+
+                tcp_motor_bus_client.write(hdr, 2);
+
+                if (response.len > 0) {
+                    tcp_motor_bus_client.write(
+                        response.response_buf,
+                        response.len
+                    );
+                }
+
+                action_state = ActionState::WAIT_LEN_0;
+                action_expected = 0;
+                action_received = 0;
+            }
+
+            break;
+        }
+    }
 }
 
 void handle_discovery() {
@@ -384,20 +478,35 @@ void setup() {
   Serial.print("TCP data server started on port : ");
   Serial.println(TCP_DATA_PORT);
 
+  tcpMotorBusServer.begin();
+  tcpMotorBusServer.setNoDelay(true);
+  Serial.print("TCP motor bus server started on port : ");
+  Serial.println(TCP_MOTOR_BUS_PORT);
+
   discovery_udp.begin(DISCOVERY_LISTEN_PORT);
   Serial.print("Discovery UPD listening on port:");  
   Serial.println(DISCOVERY_LISTEN_PORT);
 
   //déplacé l'initialisation du capteur, pour lui laisser du temps supplémentaire 
   //pour s'initialiser
-  Serial.println("initializing sensor...");
-  if (_motor_bus->init())
-    Serial.println("sensor initialized.");
+  Serial.println("initializing motor bus serial...");
+  MotorBusInitStatus motor_status = _motor_bus->init();
+  if (motor_status == MotorBusInitStatus::OK)
+    Serial.println("motor bus: servo(s) responded.");
+  else if (motor_status == MotorBusInitStatus::NO_RESPONSE)
+    Serial.println("motor bus: silence (check bus power, wiring, baud).");
   else
-    Serial.println("sensor failed to initialize.");
+    Serial.println("motor bus: invalid UART pins.");
+  uint8_t found_ids[32];
+  uint8_t n_found = _motor_bus->get_found_ids(found_ids, sizeof(found_ids));
+  Serial.print("motor bus: found ");
+  Serial.print(n_found);
+  Serial.println(" servo(s).");
+  for (uint8_t i = 0; i < n_found; ++i) {
+    Serial.print("  ID ");
+    Serial.println(found_ids[i]);
+  }
 
-
-  test();
 }
 
 void loop() {
@@ -409,8 +518,9 @@ void loop() {
   if(wifi_connected) {
     uint16_t len;
     uint8_t* buffer = _motor_bus->get_data_frame(len);
-    handle_tcp_data(buffer, len);
-    handle_tcp();
+    handle_tcp_data_streaming(buffer, len);
+    handle_tcp_commands();
+    handle_tcp_motor_bus();
     handle_discovery();
   }
 }

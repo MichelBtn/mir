@@ -280,7 +280,7 @@ void dispatch_command(Stream& stream, CommandSource source, const String& line) 
   }
 }
 
-void handle_tcp_data(uint8_t* buffer, uint16_t len) {
+void handle_tcp_data_streaming(uint8_t* buffer, uint16_t len) {
   if (!tcp_data_client || !tcp_data_client.connected()) {
     if (tcp_data_client) tcp_data_client.stop();
     tcp_data_client = tcpDataServer.available();
@@ -307,7 +307,7 @@ void handle_serial() {
   }
 }
 
-void handle_tcp() {
+void handle_tcp_commands() {
   if (!client || !client.connected()) {
     if (client)
       client.stop();
@@ -410,8 +410,8 @@ void loop() {
   if(wifi_connected) {
     uint16_t len;
     uint8_t* buffer = _sensor->get_data_frame(len);
-    handle_tcp_data(buffer, len);
-    handle_tcp();
+    handle_tcp_data_streaming(buffer, len);
+    handle_tcp_commands();
     handle_discovery();
   }
 }
