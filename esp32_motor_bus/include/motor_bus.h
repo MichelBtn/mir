@@ -8,16 +8,23 @@ struct MotorBusResponseFrame {
     uint16_t len;
 };
 
+// Protocole (binaire, longueur uint16 big-endian côté TCP, voir main.cpp) :
+//   WRITE : [0x02, id, addr, d0(, d1)] -> [status]
+//   READ  : [0x03, id, addr, count]    -> [status, d0, ...]
+// Données en little-endian (poids faible d'abord), comme le bus SCS.
 enum class MotorBusCommands : uint8_t {
     CMD_WRITE = 0x02,
+    CMD_READ = 0x03,
 };
 
 enum class MotorBusErrors : uint8_t {
-    OK =          0x00,
-    UNKNOWN_CMD = 0x01,
-    BAD_LEN =     0x02,
-    BAD_FRAME =   0x03,
-    STS_NACK =    0x04
+    OK =            0x00,
+    NOT_CONNECTED = 0x01,
+    UNKNOWN_CMD =   0x02,
+    BAD_LEN =       0x03,
+    BAD_FRAME =     0x04,
+    STS_NACK =      0x05,
+    BAD_ARG =       0x06  // argument invalide (ex. READ en broadcast)
 };
 
 enum class MotorBusInitStatus : uint8_t {
@@ -36,6 +43,9 @@ class MotorBus {
     void drain_broadcast_responses();
     MotorBusResponseFrame make_response_frame(MotorBusErrors code);
     MotorBusResponseFrame make_response_frame(MotorBusErrors code, const uint8_t* payload, uint16_t payload_len);
+    MotorBusResponseFrame handle_write(const uint8_t* frame, uint16_t len);
+    MotorBusResponseFrame handle_read(const uint8_t* frame, uint16_t len);
+    MotorBusInitStatus _init_status = MotorBusInitStatus::NO_RESPONSE;
 public:
     void update_data();
     uint8_t* get_data_frame(uint16_t& len);
