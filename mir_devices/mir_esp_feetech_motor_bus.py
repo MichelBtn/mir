@@ -17,6 +17,7 @@ from mir_devices.mir_feetech_motor_bus import (
 from loguru import logger
 import struct
 import socket
+from enum import Enum
 from typing_extensions import override
 from typing import cast, TypeAlias
 
@@ -30,19 +31,29 @@ LOAD_SUFFIX = "load"
 ACTION_POSITION_SUFFIX = "position"
 ACTION_VELOCITY_SUFFIX = "velocity"
 
-_READ_ERROR_NAMES = {
-    0x00: "OK",
-    0x01: "NOT_CONNECTED",
-    0x02: "UNKNOWN_CMD",
-    0x03: "BAD_LEN",
-    0x04: "BAD_FRAME",
-    0x05: "STS_NACK",
-    0x06: "BAD_ARG",
-}
 class MotorBusError(Exception):
     def __init__(self, message: str) -> None:
         self.message = message
         super().__init__(self.message)
+
+class MotorBusCommands(Enum):
+    CMD_STATUS = 0x01,
+    CMD_WRITE = 0x02,
+    CMD_READ = 0x03,
+
+class MotorBusErrors(Enum):
+    OK =            0x00,
+    NOT_CONNECTED = 0x01,
+    UNKNOWN_CMD =   0x02,
+    BAD_LEN =       0x03,
+    BAD_FRAME =     0x04,
+    STS_NACK =      0x05,
+    BAD_ARG =       0x06  
+
+class MotorBusInitStatus(Enum):
+    OK = 0,          
+    UART_ERROR = 1,  
+    NO_RESPONSE = 2, 
 
 class Esp32MotorBusProxy:
     def __init__(self, ip:str, port:int=5002):
@@ -52,6 +63,11 @@ class Esp32MotorBusProxy:
 
     def connect(self):
         self.sock = socket.create_connection((self.ip, self.port))
+        response = self.send(b'\x01')
+        if response[0] != MotorBusErrors.OK.value:
+            raise MotorBusError(f"CMD_STATUS Error code : {response[0]}")
+        if response[1] != MotorBusInitStatus.OK.value:
+            raise MotorBusError(f"CMD_STATUS Init status : {response[1]}")
 
     def disconnect(self):
         if self.sock is not None:
@@ -69,7 +85,7 @@ class Esp32MotorBusProxy:
             data += chunk
         return data
 
-    def send(self, payload):
+    def send(self, payload:bytes):
         if self.sock is None:
             raise ConnectionError("Connexion TCP fermée")
         # Protocole : longueur uint16 big-endian + payload
@@ -88,14 +104,13 @@ class Esp32MotorBusProxy:
                 raise ValueError(f"ID servo invalide : {id:#x}")
             if not 1 <= count <= 255:
                 raise ValueError(f"count invalide : {count}")
-            payload = struct.pack("<BBBB", 0x03, id, addr, count)
+            payload = struct.pack("<BBBB", MotorBusCommands.CMD_READ.value, id, addr, count)
             response = self.send(payload)
             if len(response) < 1:
                 raise MotorBusError("réponse vide")
             status = response[0]
-            if status != 0x00:
-                name = _READ_ERROR_NAMES.get(status, "UNKNOWN")
-                raise MotorBusError(f"CMD_READ id={id} addr={addr:#x} : {name} (0x{status:02X})")
+            if status != MotorBusErrors.OK.value:
+                raise MotorBusError(f"CMD_READ id={id} addr={addr:#x} : {status} (0x{status:02X})")
             if len(response) != 1 + count:
                 raise MotorBusError(
                     f"trame non conforme : {len(response)} octet(s) reçu(s), {1 + count} attendu(s)"
@@ -113,6 +128,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
     
     def __init__(self, config: mirMotorBusConfiguration):
         mirDevice.__init__(self)
+        self._is_connected = False
         self._config = config
         self._mir_motors = config.motors
         self._id_to_name_dict = {motor_cfg.id: motor_name for motor_name, motor_cfg in self._mir_motors.items()}
@@ -181,6 +197,56 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
 
         return normalized_values
 
+    def write(
+        self, data_name: str, motor: str, value: RegValue, *, normalize: bool = True, num_retry: int = 0
+    ) -> None:
+
+        id_ = self.motors[motor].id
+        model = self.motors[motor].model
+        addr, length = get_address(self.model_ctrl_table, model, data_name)
+
+        # TODO: remove me (debug)
+        norm_value = value
+
+        if normalize and data_name in self.normalized_data:
+            value = self._unnormalize({id_: value})[id_]
+
+        value = self._encode_sign(data_name, {id_: value})[id_]
+
+        # TODO: remove me (debug)
+        logger.debug(f"[MOTOR_BUS] {data_name=}, {id_=}, {value=}, {norm_value=}")
+
+        err_msg = f"Failed to write '{data_name}' on {id_=} with '{value}' after {num_retry + 1} tries."
+        self._write(addr, length, id_, value, num_retry=num_retry, raise_on_error=True, err_msg=err_msg)
+
+    def _write(
+        self,
+        addr: int,
+        length: int,
+        motor_id: int,
+        value: int,
+        *,
+        num_retry: int = 0,
+        raise_on_error: bool = True,
+        err_msg: str = "",
+    ) -> tuple[int, int]:
+        data = self._serialize_data(value, length)
+        for n_try in range(1 + num_retry):
+            comm, error = self.packet_handler.writeTxRx(self.port_handler, motor_id, addr, length, data)
+            if self._is_comm_success(comm):
+                break
+            logger.debug(
+                f"Failed to sync write @{addr=} ({length=}) on id={motor_id} with {value=} ({n_try=}): "
+                + self.packet_handler.getTxRxResult(comm)
+            )
+
+        if not self._is_comm_success(comm) and raise_on_error:
+            raise ConnectionError(f"{err_msg} {self.packet_handler.getTxRxResult(comm)}")
+        elif self._is_error(error) and raise_on_error:
+            raise RuntimeError(f"{err_msg} {self.packet_handler.getRxPacketError(error)}")
+
+        return comm, error
+
     def _read(
         self,
         data_name: str,
@@ -188,9 +254,18 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         *,
         normalize: bool = True,
     ) -> RegValue:
-        id_ = self._mir_motors[motor].id
         addr = sts3215_registers[data_name].address
         length = sts3215_registers[data_name].size
+        return self._read_by_id(data_name, addr, length, self._mir_motors[motor].id, normalize=normalize)
+
+    def _read_by_id(
+        self,
+        data_name: str,
+        addr: int,
+        length: int,
+        id_: int,
+        normalize: bool = True,
+    ) -> RegValue:
 
         if length not in [1,2]:   
             raise ValueError(length)
@@ -202,7 +277,6 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
             id_value = self._normalize(id_value)
 
         return id_value[id_]
-
 
     def _read_calibration(self) -> dict[str, mirMotorCalibration]:
         offsets, mins, maxes = {}, {}, {}
@@ -254,14 +328,12 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return calibration                
 
     
-    @property
-    @override
     def is_calibrated(self) -> bool:
         """
         surcharge is_calibrated de FeetechMotorBus
         car sa fonction ne testait pas les IDs
         """
-        motors_calibration = self.read_calibration()
+        motors_calibration = self._read_calibration()
         if set(motors_calibration) != set(self.calibration):
             return False
 
@@ -282,12 +354,13 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return same_ranges and same_offsets and same_ids
     
     def mir_connect(self):
-        if mirFeetechMotorsBus._bus_connected.get(self._config.motor_port, False):
+        if mirEspFeetechMotorBus._bus_connected.get(self._config.motor_port, False):
             raise ConnectionError("Le bus est déjà connecté")
         try :
-            super().connect(True)   
+            self._proxy.connect()
             self._mir_is_ready = True
-            mirFeetechMotorsBus._bus_connected[self._config.motor_port] = True
+            self._is_connected = True
+            mirEspFeetechMotorBus._bus_connected[self._config.motor_port] = True
             positions = self.mir_read_positions()
             velocities = self.mir_read_velocities()
             for motor_name, motor_cfg in self._mir_motors.items():
@@ -299,46 +372,48 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
                     self._actions[f"{motor_name}.{ACTION_VELOCITY_SUFFIX}"].set_value(velocities[motor_name])
                     range = self.mir_get_motor_velocity_range(motor_name)
                     self._actions[f"{motor_name}.{ACTION_VELOCITY_SUFFIX}"].set_range(range)
-
         except BaseException as e:
             self._mir_is_ready = False
             raise e
-        self._set_is_calibrated(self.is_calibrated)
+        self._set_is_calibrated(self.is_calibrated())
                
     def mir_disconnect(self):
-        if self.is_connected:
-            super().disconnect(False)
-        mirFeetechMotorsBus._bus_connected[self._config.motor_port] = False
+        if self._is_connected:
+            self._proxy.disconnect()
+            self._is_connected = False
+        mirEspFeetechMotorBus._bus_connected[self._config.motor_port] = False
 
     def mir_is_connected(self) -> bool:
-        return super().is_connected
+        return self._is_connected
     
     def _check_mir_is_ready(self):
         if not self._mir_is_ready:
             raise RuntimeError("Opération impossible, car le bus n'est pas prêt (non connecté ou la liste des moteurs n'est pas conforme)")
 
     def mir_read_register(self, data_name: str, motor: str, num_retry: int = 0) ->int:
-        return int(self.read(data_name, motor, normalize=False, num_retry=num_retry))
+        return int(self._read(data_name, motor, normalize=False))
     
     def mir_read_register_by_id(self, data_name: str, motor_id: int, num_retry: int = 0) ->int:
         reg = sts3215_registers[data_name]
-        value,*_ = self._read(reg.address, reg.size,  motor_id, num_retry=num_retry)
+        value = int(self._read_by_id(data_name, reg.address, reg.size,  motor_id))
         return value
     
     def mir_write_register_by_id(self, data_name: str, motor_id: int, value: int, num_retry: int = 0) ->None:
         reg = sts3215_registers[data_name]
         self._write(reg.address, reg.size,  motor_id, value, num_retry=num_retry)
-                
+
     def mir_set_operating_mode(self, motor:str, operating_mode:OperatingMode):
         self._check_mir_is_ready()
         self.write("Operating_Mode", motor, operating_mode.value)
         self._mir_motors[motor].operating_mode = operating_mode
+        
 
     def mir_disable_torques(self, motors: list[str] | None=None)->None:
         if motors is None:
             self.sync_write("Torque_Enable", 0)
         else:
             self.sync_write("Torque_Enable", {motor:0 for motor in motors})                        
+        
 
     def mir_get_position_unit(self, motor: str) -> str:
         if self.mir_is_calibrated and self._mir_motors[motor].operating_mode == OperatingMode.POSITION:
@@ -351,9 +426,8 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
     def mir_emergency_stop(self) -> None:
         self.mir_disable_torques()
         self.mir_goal_velocities(0)
-        for motor in self.motors:
-            positions = self.mir_read_positions()
-            self.mir_goal_positions(positions, None)
+        positions = self.mir_read_positions()
+        self.mir_goal_positions(positions, None)
         self.mir_disable_torques()
 
     def mir_stop(self, name:str|list[str]|None):
@@ -622,22 +696,22 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return actions
                     
     @staticmethod
-    def mir_make_empty_bus(port : str) -> mirFeetechMotorsBus:
-        return mirFeetechMotorsBus(mirMotorBusConfiguration(motor_port=port, motors={}, calibration={}))
+    def mir_make_empty_bus(port : str) -> mirEspFeetechMotorBus:
+        return mirEspFeetechMotorBus(mirMotorBusConfiguration(motor_port=port, motors={}, calibration={}))
 
     @staticmethod
-    def mir_make_bus_from_motors(port: str, motors: dict[str, mirMotor]) -> mirFeetechMotorsBus:
-        return mirFeetechMotorsBus(mirMotorBusConfiguration(motor_port=port, motors=motors, calibration={}))
+    def mir_make_bus_from_motors(port: str, motors: dict[str, mirMotor]) -> mirEspFeetechMotorBus:
+        return mirEspFeetechMotorBus(mirMotorBusConfiguration(motor_port=port, motors=motors, calibration={}))
 
     @staticmethod
     def mir_scan_motors(port:str) -> list[int]:
-        if mirFeetechMotorsBus._bus_connected.get(port, False):
+        if mirEspFeetechMotorBus._bus_connected.get(port, False):
             raise ConnectionError("Le bus est déjà connecté")
 
-        bus: mirFeetechMotorsBus | None = None
+        bus: mirEspFeetechMotorBus | None = None
         try :
-            bus = mirFeetechMotorsBus.mir_make_empty_bus(port)
-            bus.connect(handshake=False)
+            bus = mirEspFeetechMotorBus.mir_make_empty_bus(port)
+            bus.mir_connect()
             ping_res = bus.broadcast_ping()
             return list(result) if (result := ping_res) else []
         except Exception as e:

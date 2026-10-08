@@ -25,7 +25,8 @@ bool valid_uart_pins(int rx, int tx) {
 MotorBusInitStatus MotorBus::init(uint32_t baud, int rx_pin, int tx_pin) {
     _n_found = 0;
     if (!valid_uart_pins(rx_pin, tx_pin)) {
-        return MotorBusInitStatus::UART_ERROR;
+        _init_status = MotorBusInitStatus::UART_ERROR;
+        return _init_status;
     }
     if (_initialized) {
         Serial2.end();
@@ -118,16 +119,17 @@ MotorBusResponseFrame MotorBus::parse_and_run(
     const uint8_t* frame,
     uint16_t len
 ) {
-    if (_init_status != MotorBusInitStatus::OK)
+    if (frame == nullptr || len < 1) {
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    if (static_cast<MotorBusCommands>(frame[0]) != MotorBusCommands::CMD_STATUS && _init_status != MotorBusInitStatus::OK)
         return make_response_frame(MotorBusErrors::NOT_CONNECTED);
 
     _response_frame.len = 0;
 
-    if (frame == nullptr || len < 1) {
-        return make_response_frame(MotorBusErrors::BAD_FRAME);
-    }
-
     switch (static_cast<MotorBusCommands>(frame[0])) {
+        case MotorBusCommands::CMD_STATUS:
+            return handle_status(frame, len);
         case MotorBusCommands::CMD_WRITE:
             return handle_write(frame, len);
         case MotorBusCommands::CMD_READ:
@@ -139,6 +141,17 @@ MotorBusResponseFrame MotorBus::parse_and_run(
             #endif
             return make_response_frame(MotorBusErrors::UNKNOWN_CMD);
     }
+}
+
+MotorBusResponseFrame MotorBus::handle_status(const uint8_t* frame, uint16_t len) {
+    // STATUS : [cmd]
+    if (len != 1) {
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+
+    uint8_t data[1];
+    data[0] = (uint8_t)_init_status;    
+    return make_response_frame(MotorBusErrors::OK, data, 1);    
 }
 
 MotorBusResponseFrame MotorBus::handle_write(const uint8_t* frame, uint16_t len) {
