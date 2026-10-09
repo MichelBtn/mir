@@ -19,6 +19,7 @@ import struct
 import socket
 from enum import Enum
 from typing_extensions import override
+from functools import wraps
 from typing import cast, TypeAlias
 
 RegValue : TypeAlias = int|float
@@ -32,6 +33,11 @@ ACTION_POSITION_SUFFIX = "position"
 ACTION_VELOCITY_SUFFIX = "velocity"
 
 class MotorBusError(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(self.message)
+
+class MotorBusNotConnected(MotorBusError):
     def __init__(self, message: str) -> None:
         self.message = message
         super().__init__(self.message)
@@ -60,21 +66,25 @@ class Esp32MotorBusProxy:
         self.ip = ip
         self.port = port
         self.sock:socket.socket | None = None
-
+        self._is_connected : bool = False
+    
     def connect(self):
+        self._is_connected = False
         self.sock = socket.create_connection((self.ip, self.port))
-        response = self.send(b'\x01')
+        response = self._send(b'\x01')
         if response[0] != MotorBusErrors.OK.value:
             raise MotorBusError(f"CMD_STATUS Error code : {response[0]}")
         if response[1] != MotorBusInitStatus.OK.value:
             raise MotorBusError(f"CMD_STATUS Init status : {response[1]}")
+        self._is_connected = True
 
     def disconnect(self):
         if self.sock is not None:
             self.sock.close()
         self.sock = None
+        self._is_connected = False
 
-    def recv_exact(self, size):
+    def _recv_exact(self, size):
         if self.sock is None:
             raise ConnectionError("Connexion TCP fermée")
         data = b""
@@ -85,27 +95,33 @@ class Esp32MotorBusProxy:
             data += chunk
         return data
 
-    def send(self, payload:bytes):
+    def _send(self, payload:bytes):
         if self.sock is None:
             raise ConnectionError("Connexion TCP fermée")
         # Protocole : longueur uint16 big-endian + payload
         frame = struct.pack(">H", len(payload)) + payload
         self.sock.sendall(frame)
         # Réception de la longueur de réponse
-        response_len = struct.unpack(">H", self.recv_exact(2))[0]
+        response_len = struct.unpack(">H", self._recv_exact(2))[0]
         # Réception de la réponse
-        response = self.recv_exact(response_len)
+        response = self._recv_exact(response_len)
         return response
     
+    def _check_not_connected(self):
+        if not self._is_connected:
+            raise MotorBusNotConnected(
+                f"{self.__class__.__name__} is not connected. Run `.connect()` first."
+            )
 
     def read_reg(self, id: int, addr: int, count: int) -> int:
+        self._check_not_connected()
         try:
             if not 0 <= id <= 0xFD:
                 raise ValueError(f"ID servo invalide : {id:#x}")
             if not 1 <= count <= 255:
                 raise ValueError(f"count invalide : {count}")
             payload = struct.pack("<BBBB", MotorBusCommands.CMD_READ.value, id, addr, count)
-            response = self.send(payload)
+            response = self._send(payload)
             if len(response) < 1:
                 raise MotorBusError("réponse vide")
             status = response[0]
@@ -122,6 +138,28 @@ class Esp32MotorBusProxy:
             )            
             raise
 
+    def write_reg(self, id: int, addr:int, value:int, length:int):
+        self._check_not_connected()
+        try:
+            if length == 1:
+                payload = struct.pack("<BBBB", 0x02, id, addr, value)
+            elif length == 2:
+                payload = struct.pack("<BBBH", 0x02, id, addr, value)
+            else:
+                raise ValueError("write_reg : value doit être un byte ou un entier 16bits")
+            response = self._send(payload)
+            if len(response) < 1:
+                raise MotorBusError("réponse vide")
+            status = response[0]
+            if status != MotorBusErrors.OK.value:
+                raise MotorBusError(f"CMD_READ id={id} addr={addr:#x} : {status} (0x{status:02X})")
+        except Exception as e:
+            logger.exception(
+                f"Failed to write @{addr=} ({value=}) on {id=}): {e}"
+            )            
+            raise
+
+    
 class mirEspFeetechMotorBus(ImirFeetechMotorBus):
    
     _bus_connected : dict[str, bool] = {}
@@ -155,7 +193,22 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         }
         self._normalized_data = ["Goal_Position", "Present_Position"]
 
-    def decode_sign_magnitude(self, encoded_value: int, sign_bit_index: int):
+    def _encode_sign_magnitude(self, value: int, sign_bit_index: int):
+        max_magnitude = (1 << sign_bit_index) - 1
+        magnitude = abs(value)
+        if magnitude > max_magnitude:
+            raise ValueError(f"Magnitude {magnitude} exceeds {max_magnitude} (max for {sign_bit_index=})")
+        direction_bit = 1 if value < 0 else 0
+        return (direction_bit << sign_bit_index) | magnitude
+
+    def _encode_sign(self, data_name: str, ids_values: dict[int, int]) -> dict[int, int]:
+        for id_ in ids_values:
+            if data_name in self._encoding_table:
+                sign_bit = self._encoding_table[data_name]
+                ids_values[id_] = self._encode_sign_magnitude(ids_values[id_], sign_bit)
+
+        return ids_values
+    def _decode_sign_magnitude(self, encoded_value: int, sign_bit_index: int):
         direction_bit = (encoded_value >> sign_bit_index) & 1
         magnitude_mask = (1 << sign_bit_index) - 1
         magnitude = encoded_value & magnitude_mask
@@ -165,7 +218,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         for id_ in ids_values:
             if data_name in self._encoding_table:
                 sign_bit = self._encoding_table[data_name]
-                ids_values[id_] = self.decode_sign_magnitude(ids_values[id_], sign_bit)
+                ids_values[id_] = self._decode_sign_magnitude(ids_values[id_], sign_bit)
         return ids_values
     
     def _normalize(self, ids_values: dict[int, int]) -> dict[int, float]:
@@ -196,56 +249,68 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
                 raise NotImplementedError
 
         return normalized_values
+    
+    def _unnormalize(self, ids_values: dict[int, float]) -> dict[int, int]:
+        if not self.calibration:
+            raise RuntimeError(f"{self} has no calibration registered.")
 
-    def write(
+        unnormalized_values = {}
+        for id_, val in ids_values.items():
+            motor = self._id_to_name_dict[id_]
+            min_ = self.calibration[motor].range_min
+            max_ = self.calibration[motor].range_max
+            drive_mode = self.calibration[motor].drive_mode
+            if max_ == min_:
+                raise ValueError(f"Invalid calibration for motor '{motor}': min and max are equal.")
+
+            if self._mir_motors[motor].norm_mode is MotorNormMode.RANGE_M100_100:
+                val = -val if drive_mode else val
+                bounded_val = min(100.0, max(-100.0, val))
+                unnormalized_values[id_] = int(((bounded_val + 100) / 200) * (max_ - min_) + min_)
+            elif self._mir_motors[motor].norm_mode is MotorNormMode.RANGE_0_100:
+                val = 100 - val if drive_mode else val
+                bounded_val = min(100.0, max(0.0, val))
+                unnormalized_values[id_] = int((bounded_val / 100) * (max_ - min_) + min_)
+            elif self._mir_motors[motor].norm_mode is MotorNormMode.DEGREES:
+                mid = (min_ + max_) / 2
+                max_res = 4095
+                unnormalized_values[id_] = int((val * max_res / 360) + mid)
+            else:
+                raise NotImplementedError
+
+        return unnormalized_values
+
+    def _write(
         self, data_name: str, motor: str, value: RegValue, *, normalize: bool = True, num_retry: int = 0
     ) -> None:
 
-        id_ = self.motors[motor].id
-        model = self.motors[motor].model
-        addr, length = get_address(self.model_ctrl_table, model, data_name)
+        id_ = self._mir_motors[motor].id
+        addr = sts3215_registers[data_name].address
+        length = sts3215_registers[data_name].size
 
-        # TODO: remove me (debug)
+
+        self._write_by_id(data_name, addr, length, id_, value, normalize)
+
+    def _write_by_id(
+        self,
+        data_name: str,
+        addr: int,
+        length: int,
+        id_: int,
+        value: RegValue,
+        normalize: bool
+    ):
         norm_value = value
 
-        if normalize and data_name in self.normalized_data:
+        if normalize and data_name in self._normalized_data:
             value = self._unnormalize({id_: value})[id_]
 
-        value = self._encode_sign(data_name, {id_: value})[id_]
+        value = self._encode_sign(data_name, {id_: int(value)})[id_]
 
         # TODO: remove me (debug)
         logger.debug(f"[MOTOR_BUS] {data_name=}, {id_=}, {value=}, {norm_value=}")
+        self._proxy.write_reg(id_, addr, value, length)
 
-        err_msg = f"Failed to write '{data_name}' on {id_=} with '{value}' after {num_retry + 1} tries."
-        self._write(addr, length, id_, value, num_retry=num_retry, raise_on_error=True, err_msg=err_msg)
-
-    def _write(
-        self,
-        addr: int,
-        length: int,
-        motor_id: int,
-        value: int,
-        *,
-        num_retry: int = 0,
-        raise_on_error: bool = True,
-        err_msg: str = "",
-    ) -> tuple[int, int]:
-        data = self._serialize_data(value, length)
-        for n_try in range(1 + num_retry):
-            comm, error = self.packet_handler.writeTxRx(self.port_handler, motor_id, addr, length, data)
-            if self._is_comm_success(comm):
-                break
-            logger.debug(
-                f"Failed to sync write @{addr=} ({length=}) on id={motor_id} with {value=} ({n_try=}): "
-                + self.packet_handler.getTxRxResult(comm)
-            )
-
-        if not self._is_comm_success(comm) and raise_on_error:
-            raise ConnectionError(f"{err_msg} {self.packet_handler.getTxRxResult(comm)}")
-        elif self._is_error(error) and raise_on_error:
-            raise RuntimeError(f"{err_msg} {self.packet_handler.getRxPacketError(error)}")
-
-        return comm, error
 
     def _read(
         self,
