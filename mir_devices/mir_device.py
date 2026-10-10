@@ -261,8 +261,8 @@ class ImirFeetechMotorBus(mirDevice):
         pass
 
     @abstractmethod
-    def mir_reset_calibration(self, motors: list[str] | None = None) -> None:
-        """Réinitialise la calibration des moteurs spécifiés ou de tous les moteurs."""
+    def mir_reset_calibration(self) -> None:
+        """Réinitialise la calibration de tous les moteurs."""
         pass
 
     @abstractmethod
@@ -319,12 +319,6 @@ class ImirFeetechMotorBus(mirDevice):
     @abstractmethod
     def mir_make_bus_from_motors(port: str, motors: dict) -> "ImirFeetechMotorBus":
         """Fabrique une instance de bus initialisée avec des moteurs sur un port donné."""
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def mir_scan_motors(port: str) -> list[int]:
-        """Scanne un port spécifique pour lister les identifiants des moteurs présents."""
         pass
 
     @staticmethod

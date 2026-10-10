@@ -76,6 +76,8 @@ class DiscoveryScanner():
                     sensor_type=device_type,
                     ip=ip,
                 )
+            elif device_type == mirEspMotorBusConfiguration.DEVICE_TYPE:
+                pass
             return None, None
         except Exception as e:
             logger.warning(f"[Scanner] Parse échoué pour {ip} : {e!r}")

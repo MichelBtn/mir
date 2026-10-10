@@ -437,10 +437,22 @@ void handle_discovery() {
     return;
 
   IPAddress sender_ip = discovery_udp.remoteIP();
-  char response[128];
-  snprintf(response, sizeof(response),
-           "{\"id\":\"%s\",\"type\":\"%s\",\"ip\":\"%s\"}",
+  uint8_t found_ids[MotorBus::MAX_FOUND_IDS];
+  uint8_t n_found = (_motor_bus != nullptr)
+      ? _motor_bus->get_found_ids(found_ids, sizeof(found_ids))
+      : 0;
+
+  char response[192 + MotorBus::MAX_FOUND_IDS * 4];
+  int off = snprintf(response, sizeof(response),
+           "{\"id\":\"%s\",\"type\":\"%s\",\"ip\":\"%s\",\"motor_ids\":[",
            sensor_id, sensor_type, current_ip.toString().c_str());
+  for (uint8_t i = 0; i < n_found && off > 0 && off < (int)sizeof(response); ++i) {
+    off += snprintf(response + off, sizeof(response) - off,
+                    "%s%u", (i == 0) ? "" : ",", found_ids[i]);
+  }
+  if (off > 0 && off < (int)sizeof(response)) {
+    snprintf(response + off, sizeof(response) - off, "]}");
+  }
 
   discovery_udp.beginPacket(sender_ip, DISCOVERY_RESPONSE_PORT);
   discovery_udp.write((const uint8_t*)response, strlen(response));

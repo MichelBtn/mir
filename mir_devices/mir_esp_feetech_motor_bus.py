@@ -12,15 +12,18 @@ from mir_devices.mir_feetech_motor_bus import (
     mirMotor,
     OperatingMode,
     Event_,
-    sts3215_registers
+    sts3215_registers,
+    RPM_PER_UNIT,
 )
+from dataclasses import dataclass
 from loguru import logger
 import struct
 import socket
+import time
 from enum import Enum
+import dacite
 from typing_extensions import override
-from functools import wraps
-from typing import cast, TypeAlias
+from typing import TypeAlias, Any
 
 RegValue : TypeAlias = int|float
 
@@ -60,6 +63,27 @@ class MotorBusInitStatus(Enum):
     OK = 0,          
     UART_ERROR = 1,  
     NO_RESPONSE = 2, 
+
+@dataclass
+class mirEspMotorBusConfiguration:
+    ip_address: str
+    motors: dict[str, mirMotor]
+    calibration: dict[str, mirMotorCalibration]
+
+    @staticmethod
+    def create_motor_bus_from_dict(data: dict[str, Any], dacite_config: dacite.Config) -> mirEspMotorBusConfiguration:
+        ip_address = data.get("ip_address", "")
+        calibration_dict = data.get("calibration", {})
+        calibration = {k: dacite.from_dict(mirMotorCalibration, v, dacite_config) for k, v in calibration_dict.items()}        
+        motors_dict = data.get("motors", {})
+        motors = {k: dacite.from_dict(mirMotor, v, dacite_config) for k, v in motors_dict.items()}
+        return mirEspMotorBusConfiguration(ip_address=ip_address, motors=motors, calibration=calibration)
+
+    def __str__(self) -> str:
+        ids= ", ".join([f"{key}:ID={motor.id} " for key, motor in self.motors.items()])
+        return f"{self.ip_address}. {ids}"
+
+    DEVICE_TYPE = "mirEspFeetechMotorBus"
 
 class Esp32MotorBusProxy:
     def __init__(self, ip:str, port:int=5002):
@@ -159,6 +183,10 @@ class Esp32MotorBusProxy:
             )            
             raise
 
+    def broadcast_ping(self) -> list[int]:
+        self._check_not_connected()
+        return []
+
     
 class mirEspFeetechMotorBus(ImirFeetechMotorBus):
    
@@ -222,15 +250,15 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return ids_values
     
     def _normalize(self, ids_values: dict[int, int]) -> dict[int, float]:
-        if not self.calibration:
+        if not self._mir_calibration:
             raise RuntimeError(f"{self} has no calibration registered.")
 
         normalized_values = {}
         for id_, val in ids_values.items():
             motor = self._id_to_name_dict[id_]
-            min_ = self.calibration[motor].range_min
-            max_ = self.calibration[motor].range_max
-            drive_mode = self.calibration[motor].drive_mode
+            min_ = self._mir_calibration[motor].range_min
+            max_ = self._mir_calibration[motor].range_max
+            drive_mode = self._mir_calibration[motor].drive_mode
             if max_ == min_:
                 raise ValueError(f"Invalid calibration for motor '{motor}': min and max are equal.")
 
@@ -251,15 +279,15 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return normalized_values
     
     def _unnormalize(self, ids_values: dict[int, float]) -> dict[int, int]:
-        if not self.calibration:
+        if not self._mir_calibration:
             raise RuntimeError(f"{self} has no calibration registered.")
 
         unnormalized_values = {}
         for id_, val in ids_values.items():
             motor = self._id_to_name_dict[id_]
-            min_ = self.calibration[motor].range_min
-            max_ = self.calibration[motor].range_max
-            drive_mode = self.calibration[motor].drive_mode
+            min_ = self._mir_calibration[motor].range_min
+            max_ = self._mir_calibration[motor].range_max
+            drive_mode = self._mir_calibration[motor].drive_mode
             if max_ == min_:
                 raise ValueError(f"Invalid calibration for motor '{motor}': min and max are equal.")
 
@@ -287,30 +315,34 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         id_ = self._mir_motors[motor].id
         addr = sts3215_registers[data_name].address
         length = sts3215_registers[data_name].size
-
-
-        self._write_by_id(data_name, addr, length, id_, value, normalize)
-
-    def _write_by_id(
-        self,
-        data_name: str,
-        addr: int,
-        length: int,
-        id_: int,
-        value: RegValue,
-        normalize: bool
-    ):
         norm_value = value
 
         if normalize and data_name in self._normalized_data:
             value = self._unnormalize({id_: value})[id_]
 
         value = self._encode_sign(data_name, {id_: int(value)})[id_]
-
         # TODO: remove me (debug)
         logger.debug(f"[MOTOR_BUS] {data_name=}, {id_=}, {value=}, {norm_value=}")
+        self._write_reg(addr, length, id_, value)
+
+    def _write_reg(
+        self,
+        addr: int,
+        length: int,
+        id_: int,
+        value: int,
+    ):
         self._proxy.write_reg(id_, addr, value, length)
 
+    def _sync_write(
+        self,
+        data_name: str,
+        values: RegValue | dict[str, RegValue],
+        *,
+        normalize: bool = True,
+        num_retry: int = 0,
+    ) -> None:
+        raise NotImplementedError("not implemented")
 
     def _read(
         self,
@@ -321,27 +353,32 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
     ) -> RegValue:
         addr = sts3215_registers[data_name].address
         length = sts3215_registers[data_name].size
-        return self._read_by_id(data_name, addr, length, self._mir_motors[motor].id, normalize=normalize)
+        id_ = self._mir_motors[motor].id
+        value = self._read_reg(addr, length, id_)
+        id_value = self._decode_sign(data_name, {id_: value})
+        if normalize and data_name in self._normalized_data:
+            id_value = self._normalize(id_value)
+        return id_value[id_]
 
-    def _read_by_id(
+    def _read_reg(
         self,
-        data_name: str,
         addr: int,
         length: int,
         id_: int,
-        normalize: bool = True,
-    ) -> RegValue:
-
+    ) -> int:
         if length not in [1,2]:   
             raise ValueError(length)
+        return self._proxy.read_reg(id_, addr, length)
 
-        value = self._proxy.read_reg(id_, addr, length)
-        id_value = self._decode_sign(data_name, {id_: value})
-
-        if normalize and data_name in self._normalized_data:
-            id_value = self._normalize(id_value)
-
-        return id_value[id_]
+    def _sync_read(
+        self,
+        data_name: str,
+        motors: str | list[str] | None = None,
+        *,
+        normalize: bool = True,
+        num_retry: int = 0,
+    ) -> dict[str, RegValue]:
+        raise NotImplementedError("not implemented")
 
     def _read_calibration(self) -> dict[str, mirMotorCalibration]:
         offsets, mins, maxes = {}, {}, {}
@@ -361,7 +398,6 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
                 range_min=mins[motor],
                 range_max=maxes[motor],
             )
-
         return calibration
 
     @property
@@ -393,27 +429,23 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return calibration                
 
     
-    def is_calibrated(self) -> bool:
-        """
-        surcharge is_calibrated de FeetechMotorBus
-        car sa fonction ne testait pas les IDs
-        """
+    def check_is_calibrated(self) -> bool:
         motors_calibration = self._read_calibration()
-        if set(motors_calibration) != set(self.calibration):
+        if set(motors_calibration) != set(self._mir_calibration):
             return False
 
         same_ranges = all(
-            self.calibration[motor].range_min == cal.range_min
-            and self.calibration[motor].range_max == cal.range_max
+            self._mir_calibration[motor].range_min == cal.range_min
+            and self._mir_calibration[motor].range_max == cal.range_max
             for motor, cal in motors_calibration.items()
         )
         same_ids = all(
-            self.calibration[motor].id == cal.id
+            self._mir_calibration[motor].id == cal.id
             for motor, cal in motors_calibration.items()
         )
 
         same_offsets = all(
-            self.calibration[motor].homing_offset == cal.homing_offset
+            self._mir_calibration[motor].homing_offset == cal.homing_offset
             for motor, cal in motors_calibration.items()
         )
         return same_ranges and same_offsets and same_ids
@@ -440,7 +472,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         except BaseException as e:
             self._mir_is_ready = False
             raise e
-        self._set_is_calibrated(self.is_calibrated())
+        self._set_is_calibrated(self.check_is_calibrated())
                
     def mir_disconnect(self):
         if self._is_connected:
@@ -460,25 +492,23 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
     
     def mir_read_register_by_id(self, data_name: str, motor_id: int, num_retry: int = 0) ->int:
         reg = sts3215_registers[data_name]
-        value = int(self._read_by_id(data_name, reg.address, reg.size,  motor_id))
+        value = self._read_reg(reg.address, reg.size,  motor_id)
         return value
     
     def mir_write_register_by_id(self, data_name: str, motor_id: int, value: int, num_retry: int = 0) ->None:
         reg = sts3215_registers[data_name]
-        self._write(reg.address, reg.size,  motor_id, value, num_retry=num_retry)
+        self._write_reg(reg.address, reg.size,  motor_id, value)
 
     def mir_set_operating_mode(self, motor:str, operating_mode:OperatingMode):
         self._check_mir_is_ready()
-        self.write("Operating_Mode", motor, operating_mode.value)
+        self._write("Operating_Mode", motor, operating_mode.value)
         self._mir_motors[motor].operating_mode = operating_mode
-        
 
     def mir_disable_torques(self, motors: list[str] | None=None)->None:
         if motors is None:
-            self.sync_write("Torque_Enable", 0)
+            self._sync_write("Torque_Enable", 0)
         else:
-            self.sync_write("Torque_Enable", {motor:0 for motor in motors})                        
-        
+            self._sync_write("Torque_Enable", {motor:0 for motor in motors})                        
 
     def mir_get_position_unit(self, motor: str) -> str:
         if self.mir_is_calibrated and self._mir_motors[motor].operating_mode == OperatingMode.POSITION:
@@ -511,14 +541,13 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
 
     def mir_goal_position(self, name: str, pos:int|float, vel:int|float):
         self._check_mir_is_ready()
-        #self.mir_goal_velocity(name, vel)
         velocities : dict[str, int|float] = {name: vel}
         self.mir_goal_velocities(velocities)
         time.sleep(0.001)
         if self._mir_is_calibrated:
-            self.write("Goal_Position", name, pos, normalize=True)
+            self._write("Goal_Position", name, pos, normalize=True)
         else:
-            self.write("Goal_Position", name, int(pos), normalize=False)
+            self._write("Goal_Position", name, int(pos), normalize=False)
     
     def mir_goal_velocities(self, velocities:  int | dict[str, int|float]) -> None:
         """
@@ -534,7 +563,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         else:
             velocities = int(velocities / RPM_PER_UNIT + 0.5)
         """Déplace un ou plusieurs moteurs à des vitesses données."""
-        self.sync_write("Goal_Velocity", velocities, normalize=False)
+        self._sync_write("Goal_Velocity", velocities, normalize=False)
 
     def mir_goal_positions(self, positions:dict[str, int|float] | int | float, velocities: dict[str, int|float]|None):
         self._check_mir_is_ready()
@@ -542,14 +571,14 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
             self.mir_goal_velocities(velocities)
             time.sleep(0.001)            
         if self._mir_is_calibrated:
-            self.sync_write("Goal_Position", positions, normalize=True)
+            self._sync_write("Goal_Position", positions, normalize=True)
         else:
-            self.sync_write("Goal_Position", positions, normalize=True)
+            self._sync_write("Goal_Position", positions, normalize=True)
     
     def mir_goal_velocity(self, name: str, velocity: int|float) -> None:
         self._check_mir_is_ready()
         velocity = int(velocity / RPM_PER_UNIT + 0.5)
-        self.write("Goal_Velocity", name, velocity)
+        self._write("Goal_Velocity", name, velocity)
 
     @staticmethod
     def mir_normalize_motor_pos_for_velocity_mode(raw_position:int, calibration: mirMotorCalibration) -> float:
@@ -564,7 +593,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
     def mir_read_positions(self, motors: list[str]|None = None) -> dict[str, int|float]:
         self._check_mir_is_ready()
         if not self._mir_is_calibrated or self._mir_calibration is None:
-            return self.sync_read("Present_Position", motors, normalize=False)
+            return self._sync_read("Present_Position", motors, normalize=False)
         if motors is None:
             motors_velocity = [motor for motor in self._mir_motors if self._mir_motors[motor].operating_mode == OperatingMode.VELOCITY]
             motors_positions = [motor for motor in self._mir_motors if self._mir_motors[motor].operating_mode == OperatingMode.POSITION]
@@ -574,11 +603,11 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         if motors_positions is None or len(motors_positions) == 0:
             positions = {}
         else:
-            positions = self.sync_read("Present_Position", motors_positions, normalize=True)
+            positions = self._sync_read("Present_Position", motors_positions, normalize=True)
         if motors_velocity is not None and len(motors_velocity) > 0:            
-            positions_velocity = self.sync_read("Present_Position", motors_velocity, normalize=False)
+            positions_velocity = self._sync_read("Present_Position", motors_velocity, normalize=False)
             for motor, pos in positions_velocity.items():
-                positions[motor] = mirFeetechMotorsBus.mir_normalize_motor_pos_for_velocity_mode(
+                positions[motor] = mirEspFeetechMotorBus.mir_normalize_motor_pos_for_velocity_mode(
                                                         int(pos), 
                                                         self._mir_calibration[motor]
                                                     )            
@@ -586,40 +615,52 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
 
     def mir_read_raw_positions(self, motors: list[str]|None = None) -> dict[str, int|float]:
         self._check_mir_is_ready()
-        return self.sync_read("Present_Position", motors, normalize=False)
+        return self._sync_read("Present_Position", motors, normalize=False)
 
     def mir_read_velocities(self, motors: list[str]|None = None) -> dict[str, int|float]:
         self._check_mir_is_ready()
-        result = self.sync_read("Present_Velocity", motors)
+        result = self._sync_read("Present_Velocity", motors)
         return {key: int(val * RPM_PER_UNIT + 0.5) for key, val in result.items()}
 
     def mir_read_currents(self, motors: list[str]|None = None) -> dict[str, int|float]:            
         self._check_mir_is_ready()
-        raw_currents = self.sync_read("Present_Current", motors)
+        raw_currents = self._sync_read("Present_Current", motors)
         return {key: int(val * 6.5 + 0.5) for key, val in raw_currents.items()}
     
     def mir_read_loads(self, motors: list[str]|None = None) -> dict[str, int|float]:
         self._check_mir_is_ready()
-        raw_loads = self.sync_read("Present_Load", motors)
+        raw_loads = self._sync_read("Present_Load", motors)
         return {key: int(val / 10.0) for key, val in raw_loads.items()}
     
     def mir_read_temperatures(self, motors: list[str]|None = None) -> dict[str, int|float]:            
         self._check_mir_is_ready()
-        return self.sync_read("Present_Temperature", motors)
+        return self._sync_read("Present_Temperature", motors)
 
     def mir_is_moving(self, motors:list[str]|None=None) -> bool:
-        velocities = self.sync_read("Present_Velocity", motors)
+        velocities = self._sync_read("Present_Velocity", motors)
         return any(v != 0 for v in velocities.values())
 
-    def mir_reset_calibration(self, motors = None):
+    def mir_reset_calibration(self):
         self._check_mir_is_ready()
-        super().reset_calibration(motors) 
+        for motor in self._mir_motors:
+            max_res = 4095
+            self._write("Homing_Offset", motor, 0, normalize=False)
+            self._write("Min_Position_Limit", motor, 0, normalize=False)
+            self._write("Max_Position_Limit", motor, max_res, normalize=False)
+
+        self._mir_calibration = {}        
         self._set_is_calibrated(False)    
+
+    def _write_calibration(self):
+        for motor, calibration in self._mir_calibration.items():
+            self._write("Homing_Offset", motor, calibration.homing_offset)
+            self._write("Min_Position_Limit", motor, calibration.range_min)
+            self._write("Max_Position_Limit", motor, calibration.range_max)
 
     def mir_calibrate(self, homing_offsets: dict, range_mins: dict, range_maxes:dict) -> None: 
         self._check_mir_is_ready()
         self._mir_calibration = {}
-        for motor, m in self.motors.items():
+        for motor, m in self._mir_motors.items():
             self._mir_calibration[motor] = mirMotorCalibration(
                 id=m.id,
                 drive_mode=0,
@@ -627,9 +668,8 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
                 range_min=range_mins[motor],
                 range_max=range_maxes[motor],
             )
-        self.calibration = self._mir_calibration
-        self.write_calibration(cast(dict[str, MotorCalibration], self.calibration))
-        self._set_is_calibrated(self.is_calibrated)
+        self._write_calibration()
+        self._set_is_calibrated(self.check_is_calibrated())
         self._config.calibration = self._mir_calibration
         if not self._mir_is_calibrated:
             raise Exception("La calibration des moteurs ne correspond pas à la calibration réalisée")           
@@ -640,46 +680,48 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         if cal_from_motors is None:
             raise Exception("La calibration des moteurs n'est pas valide")
         self._mir_calibration = cal_from_motors
-        self.calibration = self._mir_calibration
-        self._set_is_calibrated(self.is_calibrated)
+        self._mir_calibration = self._mir_calibration
+        self._set_is_calibrated(self.check_is_calibrated())
         self._config.calibration = self._mir_calibration
         if not self._mir_is_calibrated:
             raise Exception("La calibration des moteurs ne correspond pas à la calibration appliquée")           
 
     def mir_store_calibration(self):
         self._check_mir_is_ready()
-        if not self.is_calibrated:
+        if not self.check_is_calibrated():
             self._stored_calibration = None
             return
-        self._stored_calibration = self.calibration.copy()
+        self._stored_calibration = self._mir_calibration.copy()
 
     def mir_restore_calibration(self):
         self._check_mir_is_ready()
         if self._stored_calibration is None:
             return
-        self.calibration = self._stored_calibration
-        self.write_calibration(cast(dict[str, MotorCalibration], self.calibration))
-        self._set_is_calibrated(self.is_calibrated)
+        self._mir_calibration = self._stored_calibration
+        self._write_calibration()
+        self._set_is_calibrated(self.check_is_calibrated())
 
     #TODO ajouter MotorNormMode
     def mir_configure_motors(self):
         self._check_mir_is_ready()
-        super().configure_motors(return_delay_time=0)
         for motor_name, motor in self._mir_motors.items():
-            self.write("Torque_Enable", motor_name, 0)
-            self.write("Operating_Mode", motor_name, motor.operating_mode.value)
-            self.write("P_Coefficient", motor_name, motor.P)
-            self.write("I_Coefficient", motor_name, motor.I)
-            self.write("D_Coefficient", motor_name, motor.D)
-            self.write("Moving_Velocity_Threshold", motor_name, 0)
-            self.write("Goal_Velocity", motor_name, 0)
-            self.write("Torque_Limit", motor_name, motor.torque_limit)
-            phase = self.read("Phase", motor_name)
+            self._write("Return_Delay_Time", motor, 0)
+            self._write("Maximum_Acceleration", motor, 254)
+            self._write("Acceleration", motor, 254)
+            self._write("Torque_Enable", motor_name, 0)
+            self._write("Operating_Mode", motor_name, motor.operating_mode.value)
+            self._write("P_Coefficient", motor_name, motor.P)
+            self._write("I_Coefficient", motor_name, motor.I)
+            self._write("D_Coefficient", motor_name, motor.D)
+            self._write("Moving_Velocity_Threshold", motor_name, 0)
+            self._write("Goal_Velocity", motor_name, 0)
+            self._write("Torque_Limit", motor_name, motor.torque_limit)
+            phase = self._read("Phase", motor_name)
             if phase != 0:
                 logger.warning(f"Remise à 0 du registre Phase du moteur {motor_name} qui était sur {phase}")
-                self.write("Lock", motor_name, 0)
-                self.write("Phase", motor_name, 0)
-                self.write("Lock", motor_name, 1)
+                self._write("Lock", motor_name, 0)
+                self._write("Phase", motor_name, 0)
+                self._write("Lock", motor_name, 1)
     
     def mir_get_motor_position_range(self, motor:str)->tuple[float, float]:
         if not self._mir_is_calibrated or self._mir_calibration is None:
@@ -769,7 +811,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return mirEspFeetechMotorBus(mirMotorBusConfiguration(motor_port=port, motors=motors, calibration={}))
 
     @staticmethod
-    def mir_scan_motors(port:str) -> list[int]:
+    def _scan_motors(port:str) -> list[int]:
         if mirEspFeetechMotorBus._bus_connected.get(port, False):
             raise ConnectionError("Le bus est déjà connecté")
 
@@ -777,14 +819,13 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         try :
             bus = mirEspFeetechMotorBus.mir_make_empty_bus(port)
             bus.mir_connect()
-            ping_res = bus.broadcast_ping()
-            return list(result) if (result := ping_res) else []
+            return bus._proxy.broadcast_ping()
         except Exception as e:
             logger.error(f"Erreur lors du scan des moteurs: {e}")
             raise ConnectionError()
         finally:    
             if bus is not None:
-                bus.disconnect()
+                bus.mir_disconnect()
 
     @staticmethod
     def mir_scan_motors_on_all_ports() -> tuple[str, list[int]] | tuple[None, None]:
@@ -798,7 +839,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         for port in ports:
             print(f"scanning port {port}...")
             try:
-                motors_ids = mirFeetechMotorsBus.mir_scan_motors(port)
+                motors_ids = mirEspFeetechMotorBus._scan_motors(port)
                 return (port, motors_ids)
             except ConnectionError:
                 continue

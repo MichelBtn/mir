@@ -397,9 +397,9 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         velocities = self.sync_read("Present_Velocity", motors)
         return any(v != 0 for v in velocities.values())
 
-    def mir_reset_calibration(self, motors = None):
+    def mir_reset_calibration(self):
         self._check_mir_is_ready()
-        super().reset_calibration(motors) 
+        super().reset_calibration(None) 
         self._set_is_calibrated(False)    
 
     def mir_calibrate(self, homing_offsets: dict, range_mins: dict, range_maxes:dict) -> None: 
@@ -555,7 +555,7 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         return mirFeetechMotorsBus(mirMotorBusConfiguration(motor_port=port, motors=motors, calibration={}))
 
     @staticmethod
-    def mir_scan_motors(port:str) -> list[int]:
+    def _scan_motors(port:str) -> list[int]:
         if mirFeetechMotorsBus._bus_connected.get(port, False):
             raise ConnectionError("Le bus est déjà connecté")
 
@@ -584,7 +584,7 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         for port in ports:
             print(f"scanning port {port}...")
             try:
-                motors_ids = mirFeetechMotorsBus.mir_scan_motors(port)
+                motors_ids = mirFeetechMotorsBus._scan_motors(port)
                 return (port, motors_ids)
             except ConnectionError:
                 continue

@@ -36,10 +36,12 @@ enum class MotorBusInitStatus : uint8_t {
 };
 
 class MotorBus {
+public:
+    static constexpr uint8_t MAX_FOUND_IDS = 32;
+private:
     SMS_STS sc;
     MotorBusResponseFrame _response_frame;
     bool _initialized = false;
-    static constexpr uint8_t MAX_FOUND_IDS = 32;
     uint8_t _found_ids[MAX_FOUND_IDS];
     uint8_t _n_found = 0;
     void drain_broadcast_responses();
