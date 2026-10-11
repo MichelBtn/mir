@@ -75,6 +75,7 @@ class ObservationsSelectionViewModel(ViewModelBase):
     def __init__(self, dialogProvider: IDialogProvider, config: mirRobotConfig):
         super().__init__(dialogProvider)
         self._accepted : bool = False
+        # TODO : utiliser DefaultDevicesFactory
         devices = DefaultDevicesFactory().create_devices(config)
         self._observable_properties_by_device: dict[str, dict[str, ObservableProperty]] = {}
         self._observable_properties: dict[str, ObservableProperty] = {}

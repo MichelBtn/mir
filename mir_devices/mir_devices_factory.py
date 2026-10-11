@@ -1,8 +1,14 @@
+
 from dataclasses import field
 from typing import Callable
 from abc import ABC, abstractmethod
 from mir_devices.mir_sensor import mirSensorConfiguration, mirSensor
-from mir_devices.mir_feetech_motor_bus import mirMotorBusConfiguration, ImirFeetechMotorBus, mirFeetechMotorsBus
+from mir_devices.mir_feetech_motor_bus import (
+    mirMotorBusConfiguration, 
+    mirFeetechMotorsBus, 
+    ImirFeetechMotorBus,
+    mirEspFeetechMotorBusConfiguration, 
+    mirSerialFeetechMotorBusConfiguration)
 from mir_devices.cameras import PiCamera
 from mir_devices.esp_sensors import (EspSensorWheather, 
                                     EspSensorLidar, 
@@ -14,6 +20,7 @@ from mir_devices.mir_device import mirDevice, mirDevices
 from mir_robot.mir_robot_config import mirRobotConfig
 from mir_devices.mir_sensor import mirPiCameraConfiguration
 from mir_devices.mir_device import ObservableProperty
+from mir_devices.mir_esp_feetech_motor_bus import mirEspFeetechMotorBus
 
 import time
 
@@ -128,8 +135,11 @@ class DefaultFeetechMotorBusFactory(ImirFeetechMotorBusFactory):
 
     def create_bus(self, config: mirMotorBusConfiguration) -> ImirFeetechMotorBus:
         """Instancie mirFeetechMotorsBus avec le provider requis."""
-        return mirFeetechMotorsBus(config)    
-
+        if isinstance(config, mirSerialFeetechMotorBusConfiguration):
+            return mirFeetechMotorsBus(config)    
+        if isinstance(config, mirEspFeetechMotorBusConfiguration):
+            return mirEspFeetechMotorBus(config)    
+        raise ValueError(f"Unknown motor bus configuration type: {type(config)}")
 
 class ImirDevicesFactory(ABC):
     @abstractmethod

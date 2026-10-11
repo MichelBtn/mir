@@ -311,18 +311,6 @@ class ImirFeetechMotorBus(mirDevice):
 
     @staticmethod
     @abstractmethod
-    def mir_make_empty_bus(port: str) -> "ImirFeetechMotorBus":
-        """Fabrique une instance de bus vide sur un port donné."""
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def mir_make_bus_from_motors(port: str, motors: dict) -> "ImirFeetechMotorBus":
-        """Fabrique une instance de bus initialisée avec des moteurs sur un port donné."""
-        pass
-
-    @staticmethod
-    @abstractmethod
     def mir_scan_motors_on_all_ports() -> tuple[str, list[int]] | tuple[None, None]:
         """Scanne l'intégralité des ports disponibles à la recherche de moteurs."""
         pass

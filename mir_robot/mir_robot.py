@@ -23,7 +23,7 @@ class mirRobot(Robot):
         super().__init__(config)
         self._config = config
         self._enabled_observables: dict[str, ObservableProperty] = {}
-        # création motor bus        
+        # TODO création motor bus        
         if devices_factory is None:
             devices_factory = DefaultDevicesFactory()
         self._devices : mirDevices = devices_factory.create_devices(config)

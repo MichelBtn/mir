@@ -9,7 +9,7 @@ import ipaddress
 import psutil
 from dataclasses import dataclass
 from lerobot.motors import MotorNormMode
-from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirMotorBusConfiguration, mirMotor
+from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirSerialFeetechMotorBusConfiguration, mirMotor
 from mir_devices.mir_sensor import (mirPiCameraConfiguration,
                                     mirSensorConfiguration, 
                                     EspSensorSimulationConfiguration, 
@@ -35,7 +35,7 @@ l'id sera la clé du dictionnaire de mirSensor accédée par le robot
 @dataclass
 class DiscoveryScannerResult:
     sensors:dict[str, mirSensorConfiguration]
-    motor_bus:mirMotorBusConfiguration | None
+    motor_bus:mirSerialFeetechMotorBusConfiguration | None
 
 class DiscoveryScanner():
     def __init__(self):
@@ -76,8 +76,9 @@ class DiscoveryScanner():
                     sensor_type=device_type,
                     ip=ip,
                 )
-            elif device_type == mirEspMotorBusConfiguration.DEVICE_TYPE:
-                pass
+            #TODO esp motor bus
+            # elif device_type == mirEspMotorBusConfiguration.DEVICE_TYPE:
+            #     pass
             return None, None
         except Exception as e:
             logger.warning(f"[Scanner] Parse échoué pour {ip} : {e!r}")
@@ -173,12 +174,12 @@ class DiscoveryScanner():
     def stop_scan(self):
         self._stop_scan = True
         
-    def _scan_motors(self) -> mirMotorBusConfiguration | None:
+    def _scan_motors(self) -> mirSerialFeetechMotorBusConfiguration | None:
         port, motors_ids = mirFeetechMotorsBus.mir_scan_motors_on_all_ports()
         if port is None or motors_ids is None:
             return None
         motors = {f"joint_{index+1}": mirMotor(id=id, model="sts3215", norm_mode=MotorNormMode.DEGREES) for index, id in enumerate(motors_ids)}        
-        cfg = mirMotorBusConfiguration(motor_port=port, motors=motors, calibration={})
+        cfg = mirSerialFeetechMotorBusConfiguration(motor_port=port, motors=motors, calibration={})
         if self._progress_callback is not None:
             self._progress_callback(cfg)
         return cfg
@@ -192,7 +193,7 @@ class DiscoveryScanner():
     def run(self, 
             on_done_callback: Optional[Callable] = None, 
             timeout:float = 3.0,  
-            progress_callback: Callable[[mirSensorConfiguration|mirMotorBusConfiguration], None]|None=None) -> None:
+            progress_callback: Callable[[mirSensorConfiguration|mirSerialFeetechMotorBusConfiguration], None]|None=None) -> None:
     
         if self._future is not None and not self._future.done():
             raise RuntimeError("Un scan est déjà en cours. Attendez la fin ou appelez stop_scan() avant de relancer.")
@@ -252,7 +253,7 @@ def animate(interval=0.1):
         print(f"\r{' ' * 40}\r", end=' ', flush=True)
 
 if __name__ == "__main__":
-    def callback(device: mirMotorBusConfiguration|mirSensorConfiguration):
+    def callback(device: mirSerialFeetechMotorBusConfiguration|mirSensorConfiguration):
         print(f"Device found: {str(device)}")
 
     scanner = DiscoveryScanner()

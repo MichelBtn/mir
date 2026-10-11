@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from loguru import logger
 from typing import Any
 import time
+from enum import Enum
 import dacite
 from lerobot.motors.feetech import FeetechMotorsBus, OperatingMode
 from lerobot.motors import MotorCalibration, Motor
@@ -100,26 +101,43 @@ class mirMotor(Motor):
     position_mode_velocity: int = 100 #vitesse lorsque le moteur est en mode POSITION
     torque_limit: int = 250 #couple maximum en 0.1% 
 
+class MotorBusType(Enum):
+    SERIAL_FEETECH_MOTOR_BUS = "serial_feetech",
+    ESP32_FEETECH_MOTOR_BUS = "esp32_feetech"
 
 @dataclass
 class mirMotorBusConfiguration:
-    motor_port: str
     motors: dict[str, mirMotor]
     calibration: dict[str, mirMotorCalibration]
 
     @staticmethod
     def create_motor_bus_from_dict(data: dict[str, Any], dacite_config: dacite.Config) -> mirMotorBusConfiguration:
-        motor_port = data.get("motor_port", "")
+        motor_bus_type = data.get("motor_bus_type", MotorBusType.SERIAL_FEETECH_MOTOR_BUS.value)
         calibration_dict = data.get("calibration", {})
         calibration = {k: dacite.from_dict(mirMotorCalibration, v, dacite_config) for k, v in calibration_dict.items()}        
         motors_dict = data.get("motors", {})
         motors = {k: dacite.from_dict(mirMotor, v, dacite_config) for k, v in motors_dict.items()}
-        return mirMotorBusConfiguration(motor_port=motor_port, motors=motors, calibration=calibration)
+        if motor_bus_type == MotorBusType.SERIAL_FEETECH_MOTOR_BUS.value:
+            motor_port = data.get("motor_port", "")
+            return mirSerialFeetechMotorBusConfiguration(motor_port=motor_port, motors=motors, calibration=calibration)
+        if motor_bus_type == MotorBusType.ESP32_FEETECH_MOTOR_BUS.value:
+            ip_address = data.get("ip_address", "")
+            return mirEspFeetechMotorBusConfiguration(ip_address=ip_address, motors=motors, calibration=calibration)            
+        raise ValueError(f"Invalid motor bus type: {motor_bus_type}")
 
+@dataclass
+class mirSerialFeetechMotorBusConfiguration(mirMotorBusConfiguration):
+    motor_port: str
     def __str__(self) -> str:
         ids= ", ".join([f"{key}:ID={motor.id} " for key, motor in self.motors.items()])
         return f"{self.motor_port}. {ids}"
 
+@dataclass
+class mirEspFeetechMotorBusConfiguration(mirMotorBusConfiguration):
+    ip_address: str
+    def __str__(self) -> str:
+        ids= ", ".join([f"{key}:ID={motor.id} " for key, motor in self.motors.items()])
+        return f"{self.ip_address}. {ids}"
 
 POSITION_SUFFIX = "position"
 VELOCITY_SUFFIX = "velocity"
@@ -133,7 +151,7 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
    
     _bus_connected : dict[str, bool] = {}
     
-    def __init__(self, config: mirMotorBusConfiguration):
+    def __init__(self, config: mirSerialFeetechMotorBusConfiguration):
         mirDevice.__init__(self)
         self._config = config
         self._mir_motors = config.motors
@@ -548,11 +566,7 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
                     
     @staticmethod
     def mir_make_empty_bus(port : str) -> mirFeetechMotorsBus:
-        return mirFeetechMotorsBus(mirMotorBusConfiguration(motor_port=port, motors={}, calibration={}))
-
-    @staticmethod
-    def mir_make_bus_from_motors(port: str, motors: dict[str, mirMotor]) -> mirFeetechMotorsBus:
-        return mirFeetechMotorsBus(mirMotorBusConfiguration(motor_port=port, motors=motors, calibration={}))
+        return mirFeetechMotorsBus(mirSerialFeetechMotorBusConfiguration(motor_port=port, motors={}, calibration={}))
 
     @staticmethod
     def _scan_motors(port:str) -> list[int]:

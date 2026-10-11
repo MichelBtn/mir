@@ -1,3 +1,4 @@
+from __future__ import annotations
 from lerobot.motors.motors_bus import MotorNormMode
 from mir_devices.mir_device import (mirDevice, 
                                     ActionValue, 
@@ -8,12 +9,12 @@ from mir_devices.mir_device import (mirDevice,
                                     DeviceAction,
                                     mirMotorCalibration)
 from mir_devices.mir_feetech_motor_bus import (
-    mirMotorBusConfiguration,
     mirMotor,
     OperatingMode,
     Event_,
     sts3215_registers,
     RPM_PER_UNIT,
+    mirEspFeetechMotorBusConfiguration
 )
 from dataclasses import dataclass
 from loguru import logger
@@ -64,26 +65,7 @@ class MotorBusInitStatus(Enum):
     UART_ERROR = 1,  
     NO_RESPONSE = 2, 
 
-@dataclass
-class mirEspMotorBusConfiguration:
-    ip_address: str
-    motors: dict[str, mirMotor]
-    calibration: dict[str, mirMotorCalibration]
 
-    @staticmethod
-    def create_motor_bus_from_dict(data: dict[str, Any], dacite_config: dacite.Config) -> mirEspMotorBusConfiguration:
-        ip_address = data.get("ip_address", "")
-        calibration_dict = data.get("calibration", {})
-        calibration = {k: dacite.from_dict(mirMotorCalibration, v, dacite_config) for k, v in calibration_dict.items()}        
-        motors_dict = data.get("motors", {})
-        motors = {k: dacite.from_dict(mirMotor, v, dacite_config) for k, v in motors_dict.items()}
-        return mirEspMotorBusConfiguration(ip_address=ip_address, motors=motors, calibration=calibration)
-
-    def __str__(self) -> str:
-        ids= ", ".join([f"{key}:ID={motor.id} " for key, motor in self.motors.items()])
-        return f"{self.ip_address}. {ids}"
-
-    DEVICE_TYPE = "mirEspFeetechMotorBus"
 
 class Esp32MotorBusProxy:
     def __init__(self, ip:str, port:int=5002):
@@ -192,13 +174,12 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
    
     _bus_connected : dict[str, bool] = {}
     
-    def __init__(self, config: mirMotorBusConfiguration):
+    def __init__(self, config: mirEspFeetechMotorBusConfiguration):
         mirDevice.__init__(self)
         self._is_connected = False
         self._config = config
         self._mir_motors = config.motors
         self._id_to_name_dict = {motor_cfg.id: motor_name for motor_name, motor_cfg in self._mir_motors.items()}
-        self._port = config.motor_port
         self._mir_calibration:dict[str, mirMotorCalibration] = config.calibration
         self._mir_is_calibrated_changed = Event_[[bool]]()
         self._mir_is_calibrated = False
@@ -208,7 +189,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
                 self._actions[f"{motor_name}.{ACTION_POSITION_SUFFIX}"] = DeviceAction(motor_name, ACTION_POSITION_SUFFIX, 0.0,'float', '°', None)
             elif motor_cfg.operating_mode == OperatingMode.VELOCITY:                        
                 self._actions[f"{motor_name}.{ACTION_VELOCITY_SUFFIX}"] = DeviceAction(motor_name, ACTION_VELOCITY_SUFFIX, 0,'int', '°/s', None)
-        self._proxy = Esp32MotorBusProxy(config.motor_port)
+        self._proxy = Esp32MotorBusProxy(config.ip_address)
         self._encoding_table = {
             "Present_Load": 10,
             "Homing_Offset": 11,
@@ -451,13 +432,13 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return same_ranges and same_offsets and same_ids
     
     def mir_connect(self):
-        if mirEspFeetechMotorBus._bus_connected.get(self._config.motor_port, False):
+        if mirEspFeetechMotorBus._bus_connected.get(self._config.ip_address, False):
             raise ConnectionError("Le bus est déjà connecté")
         try :
             self._proxy.connect()
             self._mir_is_ready = True
             self._is_connected = True
-            mirEspFeetechMotorBus._bus_connected[self._config.motor_port] = True
+            mirEspFeetechMotorBus._bus_connected[self._config.ip_address] = True
             positions = self.mir_read_positions()
             velocities = self.mir_read_velocities()
             for motor_name, motor_cfg in self._mir_motors.items():
@@ -478,7 +459,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         if self._is_connected:
             self._proxy.disconnect()
             self._is_connected = False
-        mirEspFeetechMotorBus._bus_connected[self._config.motor_port] = False
+        mirEspFeetechMotorBus._bus_connected[self._config.ip_address] = False
 
     def mir_is_connected(self) -> bool:
         return self._is_connected
@@ -705,9 +686,9 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
     def mir_configure_motors(self):
         self._check_mir_is_ready()
         for motor_name, motor in self._mir_motors.items():
-            self._write("Return_Delay_Time", motor, 0)
-            self._write("Maximum_Acceleration", motor, 254)
-            self._write("Acceleration", motor, 254)
+            self._write("Return_Delay_Time", motor_name, 0)
+            self._write("Maximum_Acceleration", motor_name, 254)
+            self._write("Acceleration", motor_name, 254)
             self._write("Torque_Enable", motor_name, 0)
             self._write("Operating_Mode", motor_name, motor.operating_mode.value)
             self._write("P_Coefficient", motor_name, motor.P)
@@ -803,12 +784,8 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return actions
                     
     @staticmethod
-    def mir_make_empty_bus(port : str) -> mirEspFeetechMotorBus:
-        return mirEspFeetechMotorBus(mirMotorBusConfiguration(motor_port=port, motors={}, calibration={}))
-
-    @staticmethod
-    def mir_make_bus_from_motors(port: str, motors: dict[str, mirMotor]) -> mirEspFeetechMotorBus:
-        return mirEspFeetechMotorBus(mirMotorBusConfiguration(motor_port=port, motors=motors, calibration={}))
+    def mir_make_empty_bus(ip_address : str) -> mirEspFeetechMotorBus:
+        return mirEspFeetechMotorBus(mirEspFeetechMotorBusConfiguration(ip_address=ip_address, motors={}, calibration={}))
 
     @staticmethod
     def _scan_motors(port:str) -> list[int]:
@@ -834,15 +811,15 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         Retourne le premier port trouvé avec les IDs des moteurs, 
         sinon retourne (None, None)
         """
-        ports = find_acm_serial_ports()
-        print(ports)
-        for port in ports:
-            print(f"scanning port {port}...")
-            try:
-                motors_ids = mirEspFeetechMotorBus._scan_motors(port)
-                return (port, motors_ids)
-            except ConnectionError:
-                continue
-        return (None, None)
-
+        # ports = find_acm_serial_ports()
+        # print(ports)
+        # for port in ports:
+        #     print(f"scanning port {port}...")
+        #     try:
+        #         motors_ids = mirEspFeetechMotorBus._scan_motors(port)
+        #         return (port, motors_ids)
+        #     except ConnectionError:
+        #         continue
+        # return (None, None)
+        raise NotImplementedError("mir_scan_motors_on_all_ports() is not implemented for ESP32 motor bus")
         
