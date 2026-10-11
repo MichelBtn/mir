@@ -47,25 +47,23 @@ class MotorBusNotConnected(MotorBusError):
         super().__init__(self.message)
 
 class MotorBusCommands(Enum):
-    CMD_STATUS = 0x01,
-    CMD_WRITE = 0x02,
-    CMD_READ = 0x03,
+    CMD_STATUS = 0x01
+    CMD_WRITE = 0x02
+    CMD_READ = 0x03
 
 class MotorBusErrors(Enum):
-    OK =            0x00,
-    NOT_CONNECTED = 0x01,
-    UNKNOWN_CMD =   0x02,
-    BAD_LEN =       0x03,
-    BAD_FRAME =     0x04,
-    STS_NACK =      0x05,
+    OK =            0x00
+    NOT_CONNECTED = 0x01
+    UNKNOWN_CMD =   0x02
+    BAD_LEN =       0x03
+    BAD_FRAME =     0x04
+    STS_NACK =      0x05
     BAD_ARG =       0x06  
 
 class MotorBusInitStatus(Enum):
-    OK = 0,          
-    UART_ERROR = 1,  
-    NO_RESPONSE = 2, 
-
-
+    OK = 0          
+    UART_ERROR = 1
+    NO_RESPONSE = 2 
 
 class Esp32MotorBusProxy:
     def __init__(self, ip:str, port:int=5002):
@@ -78,10 +76,11 @@ class Esp32MotorBusProxy:
         self._is_connected = False
         self.sock = socket.create_connection((self.ip, self.port))
         response = self._send(b'\x01')
+        print(response[0])
         if response[0] != MotorBusErrors.OK.value:
-            raise MotorBusError(f"CMD_STATUS Error code : {response[0]}")
+            raise MotorBusError(f"L'esp32 a retourné une erreur : {response[0]}")
         if response[1] != MotorBusInitStatus.OK.value:
-            raise MotorBusError(f"CMD_STATUS Init status : {response[1]}")
+            raise MotorBusError(f"Le bus moteur n'est pas connecté à l'ESP32 ou n'est pas alimenté ou aucun moteur n'est connecté")
         self._is_connected = True
 
     def disconnect(self):
@@ -359,7 +358,15 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         normalize: bool = True,
         num_retry: int = 0,
     ) -> dict[str, RegValue]:
-        raise NotImplementedError("not implemented")
+        read_values = {}
+        if motors is None:
+            motors = list(self._mir_motors.keys())
+        elif isinstance(motors, str):
+            motors = [motors]
+        for motor in motors:
+            read_values[motor] = self._read(data_name, motor, normalize=normalize)
+        return read_values
+            
 
     def _read_calibration(self) -> dict[str, mirMotorCalibration]:
         offsets, mins, maxes = {}, {}, {}
