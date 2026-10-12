@@ -134,6 +134,8 @@ MotorBusResponseFrame MotorBus::parse_and_run(
             return handle_write(frame, len);
         case MotorBusCommands::CMD_READ:
             return handle_read(frame, len);
+        case MotorBusCommands::CMD_SYNC_WRITE:
+            return handle_sync_write(frame, len);
         default:
             #ifdef __DEBUG_MOTOR_BUS
             Serial.print("MotorBus: unknown command 0x");
@@ -199,7 +201,6 @@ MotorBusResponseFrame MotorBus::handle_write(const uint8_t* frame, uint16_t len)
         #endif
         return make_response_frame(MotorBusErrors::BAD_LEN);
     }
-
     #ifdef __DEBUG_MOTOR_BUS
     Serial.print("SCServo result = ");
     Serial.println(result);
@@ -256,4 +257,74 @@ MotorBusResponseFrame MotorBus::handle_read(const uint8_t* frame, uint16_t len) 
     if (result != count)
         return make_response_frame(MotorBusErrors::STS_NACK);
     return make_response_frame(MotorBusErrors::OK, data, count);
+}
+
+MotorBusResponseFrame MotorBus::handle_sync_write(const uint8_t* frame, uint16_t len) {
+    // SYNC_WRITE : [cmd, nid, id.., nreg, (reg, len, data_m0.., data_m1..)..]
+    //   -> [status]. Par registre : nid blocs de len octets (bloc i = valeur
+    //   du moteur i), soit nreg appels SCS::syncWrite. len est commun à tous
+    //   les moteurs d'un même registre (contrainte SCS).
+    // syncWrite est un broadcast sans réponse : pas de STS_NACK possible,
+    // le retour est OK dès que la trame est valide et émise.
+    if (frame == nullptr || len < 5) { // garde rapide, contrôles stricts dessous
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    uint16_t off = 1;
+    uint8_t nid = frame[off++];
+    if (nid == 0) {
+        return make_response_frame(MotorBusErrors::BAD_LEN);
+    }
+    if (off + nid > len) {
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    for (uint8_t i = 0; i < nid; ++i) {
+        if (frame[off + i] > 0xFD) { // 0xFE = broadcast, invalide comme cible
+            return make_response_frame(MotorBusErrors::BAD_ARG);
+        }
+    }
+    // syncWrite ne modifie ni les IDs ni les données (lecture seule vérifiée
+    // dans SCS.cpp) : zéro-copie, on pointe dans la trame reçue. Le layout
+    // nid blocs de len octets correspond exactement au nDat attendu.
+    uint8_t* ids = const_cast<uint8_t*>(&frame[off]);
+    off += nid;
+    if (off >= len) {
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    uint8_t nreg = frame[off++];
+    if (nreg == 0) {
+        return make_response_frame(MotorBusErrors::BAD_LEN);
+    }
+    for (uint8_t r = 0; r < nreg; ++r) {
+        if (off + 2 > len) {
+            return make_response_frame(MotorBusErrors::BAD_FRAME);
+        }
+        uint8_t reg = frame[off++];
+        uint8_t slen = frame[off++];
+        if (slen == 0) {
+            return make_response_frame(MotorBusErrors::BAD_LEN);
+        }
+        uint16_t need = (uint16_t)nid * slen;
+        if (off + need > len) {
+            return make_response_frame(MotorBusErrors::BAD_FRAME);
+        }
+        // Limite protocole SCS : mesLen = (slen+1)*nid+4 tient sur un octet.
+        if ((uint16_t)(slen + 1) * nid + 4 > 255) {
+            return make_response_frame(MotorBusErrors::BAD_LEN);
+        }
+        uint8_t* data = const_cast<uint8_t*>(&frame[off]);
+        off += need;
+        #ifdef __DEBUG_MOTOR_BUS
+        Serial.print("SYNC_WRITE: NID=");
+        Serial.print(nid);
+        Serial.print(" REG=");
+        Serial.print(reg, HEX);
+        Serial.print(" LEN=");
+        Serial.println(slen);
+        #endif
+        sc.syncWrite(ids, nid, reg, data, slen);
+    }
+    if (off != len) { // octets traînants : trame mal formée
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    return make_response_frame(MotorBusErrors::OK);
 }

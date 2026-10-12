@@ -1,3 +1,4 @@
+from numpy import isin
 from __future__ import annotations
 from lerobot.motors.motors_bus import MotorNormMode
 from mir_devices.mir_device import (mirDevice, 
@@ -322,7 +323,14 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         normalize: bool = True,
         num_retry: int = 0,
     ) -> None:
-        raise NotImplementedError("not implemented")
+        read_values = {}
+        if isinstance(values, RegValue):
+            motors = list(self._mir_motors.keys())
+        elif isinstance(values, dict):
+            
+        for motor in motors:
+            read_values[motor] = self._read(data_name, motor, normalize=normalize)
+        return read_values
 
     def _read(
         self,
