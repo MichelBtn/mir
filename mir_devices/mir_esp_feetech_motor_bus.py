@@ -1,4 +1,3 @@
-from mir.mir_devices import mir_devices_factory
 from __future__ import annotations
 from lerobot.motors.motors_bus import MotorNormMode
 from mir_devices.mir_device import (mirDevice, 
@@ -174,7 +173,60 @@ class Esp32MotorBusProxy:
 
     def sync_write(self, ids: list[int], regs: list[MotorBusSyncWriteReg]) -> None:
         # [0x04, NID, IDs, NREG, (REG, LEN, DATA_m0..DATA_mn) × NREG] -> [status]
-        pass
+        # LEN = longueur en octets de chaque bloc moteur, déduit de values.
+        self._check_not_connected()
+        try:
+            nid = len(ids)
+            if not 1 <= nid <= 255:
+                raise ValueError(f"NID invalide : {nid}")
+            for id_ in ids:
+                if not 1 <= id_ <= 0xFD:
+                    raise ValueError(f"ID servo invalide : {id_:#x}")
+            if not regs:
+                raise ValueError("sync_write : aucun registre")
+            for reg in regs:
+                if not 0 <= reg.addr <= 0xFF:
+                    raise ValueError(f"Adresse registre invalide : {reg.addr:#x}")
+                if len(reg.values) != nid:
+                    raise ValueError(
+                        f"sync_write : {len(reg.values)} valeur(s) pour {nid} moteur(s) "
+                        f"(reg {reg.addr:#x})"
+                    )
+                if any(not isinstance(v, (bytes, bytearray)) for v in reg.values):
+                    raise ValueError(f"sync_write : valeurs non bytes (reg {reg.addr:#x})")
+                flens = {len(v) for v in reg.values}
+                if len(flens) != 1 or 0 in flens:
+                    raise ValueError(f"sync_write : longueurs hétérogènes ou nulles (reg {reg.addr:#x})")
+                slen = flens.pop()
+                # Limite protocole SCS : mesLen = (slen+1)*nid+4 tient sur un octet.
+                if (slen + 1) * nid + 4 > 255:
+                    raise ValueError(
+                        f"sync_write : trop de données (nid={nid}, len={slen}, reg {reg.addr:#x})"
+                    )
+            data = bytearray([MotorBusCommands.CMD_SYNC_WRITE.value])
+            data.extend(nid.to_bytes(1, "little"))
+            for id_ in ids:
+                data.extend(id_.to_bytes(1, 'little'))
+            data.extend(len(regs).to_bytes(1, 'little'))
+            for reg in regs:
+                data.extend(reg.addr.to_bytes(1, 'little'))
+                data.extend(len(reg.values[0]).to_bytes(1, "little"))
+                for value in reg.values:
+                    data.extend(value)
+            payload = bytes(data)
+            if len(payload) > 255:
+                raise ValueError("sync_write : trame trop longue")
+            response = self._send(payload)
+            if len(response) < 1:
+                raise MotorBusError("réponse vide")
+            status = response[0]
+            if status != MotorBusErrors.OK.value:
+                raise MotorBusError(f"CMD_SYNC_WRITE : {status} (0x{status:02X})")
+        except Exception as e:
+            logger.exception(
+                f"Failed to sync_write: {e}"
+            )
+            raise            
 
     def broadcast_ping(self) -> list[int]:
         self._check_not_connected()
@@ -301,8 +353,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         return unnormalized_values
 
     def _write(
-        self, data_name: str, motor: str, value: RegValue, *, normalize: bool = True, num_retry: int = 0
-    ) -> None:
+        self, data_name: str, motor: str, value: RegValue, *, normalize: bool = True) -> None:
 
         id_ = self._mir_motors[motor].id
         addr = sts3215_registers[data_name].address
@@ -332,11 +383,10 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         values: RegValue | dict[str, RegValue],
         *,
         normalize: bool = True,
-        num_retry: int = 0,
     ) -> None:
-        #[0x04, nid, ids[0], ..., ids[nid-1], 1, reg, data[0], ..., data[nid-1]]
+        #[0x04, nid, ids[0], ..., ids[nid-1], 1, (reg, len, data[0], ..., data[nid-1]) x 1]
         ids_values: dict[int, RegValue] = {}
-        if isinstance(values, RegValue):
+        if isinstance(values, (int, float)):
             ids_values = {m.id: values for m in self._mir_motors.values()}
         elif isinstance(values, dict):
             ids_values = {self._mir_motors[motor].id: value for motor, value in values.items()}
@@ -353,8 +403,6 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         bytes_values = [ids_int_values[id_].to_bytes(len_, "little") for id_ in ids]
         regs = [MotorBusSyncWriteReg(addr=reg, values=bytes_values)]
         self._proxy.sync_write(ids, regs)
-        
-
 
 
     def _read(
