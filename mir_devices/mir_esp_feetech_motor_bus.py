@@ -1,4 +1,4 @@
-from numpy import isin
+from mir.mir_devices import mir_devices_factory
 from __future__ import annotations
 from lerobot.motors.motors_bus import MotorNormMode
 from mir_devices.mir_device import (mirDevice, 
@@ -25,7 +25,7 @@ import time
 from enum import Enum
 import dacite
 from typing_extensions import override
-from typing import TypeAlias, Any
+from typing import TypeAlias, Any, cast
 
 RegValue : TypeAlias = int|float
 
@@ -51,6 +51,7 @@ class MotorBusCommands(Enum):
     CMD_STATUS = 0x01
     CMD_WRITE = 0x02
     CMD_READ = 0x03
+    CMD_SYNC_WRITE = 0x04
 
 class MotorBusErrors(Enum):
     OK =            0x00
@@ -65,6 +66,11 @@ class MotorBusInitStatus(Enum):
     OK = 0          
     UART_ERROR = 1
     NO_RESPONSE = 2 
+
+@dataclass
+class MotorBusSyncWriteReg:
+    addr: int
+    values: list[bytes]  # un bytes par moteur, même longueur
 
 class Esp32MotorBusProxy:
     def __init__(self, ip:str, port:int=5002):
@@ -148,9 +154,9 @@ class Esp32MotorBusProxy:
         self._check_not_connected()
         try:
             if length == 1:
-                payload = struct.pack("<BBBB", 0x02, id, addr, value)
+                payload = struct.pack("<BBBB", MotorBusCommands.CMD_WRITE.value, id, addr, value)
             elif length == 2:
-                payload = struct.pack("<BBBH", 0x02, id, addr, value)
+                payload = struct.pack("<BBBH", MotorBusCommands.CMD_WRITE.value, id, addr, value)
             else:
                 raise ValueError("write_reg : value doit être un byte ou un entier 16bits")
             response = self._send(payload)
@@ -158,12 +164,17 @@ class Esp32MotorBusProxy:
                 raise MotorBusError("réponse vide")
             status = response[0]
             if status != MotorBusErrors.OK.value:
-                raise MotorBusError(f"CMD_READ id={id} addr={addr:#x} : {status} (0x{status:02X})")
+                raise MotorBusError(f"CMD_WRITE id={id} addr={addr:#x} : {status} (0x{status:02X})")
         except Exception as e:
             logger.exception(
                 f"Failed to write @{addr=} ({value=}) on {id=}): {e}"
             )            
             raise
+
+
+    def sync_write(self, ids: list[int], regs: list[MotorBusSyncWriteReg]) -> None:
+        # [0x04, NID, IDs, NREG, (REG, LEN, DATA_m0..DATA_mn) × NREG] -> [status]
+        pass
 
     def broadcast_ping(self) -> list[int]:
         self._check_not_connected()
@@ -323,14 +334,28 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         normalize: bool = True,
         num_retry: int = 0,
     ) -> None:
-        read_values = {}
+        #[0x04, nid, ids[0], ..., ids[nid-1], 1, reg, data[0], ..., data[nid-1]]
+        ids_values: dict[int, RegValue] = {}
         if isinstance(values, RegValue):
-            motors = list(self._mir_motors.keys())
+            ids_values = {m.id: values for m in self._mir_motors.values()}
         elif isinstance(values, dict):
-            
-        for motor in motors:
-            read_values[motor] = self._read(data_name, motor, normalize=normalize)
-        return read_values
+            ids_values = {self._mir_motors[motor].id: value for motor, value in values.items()}
+
+        if normalize and data_name in self._normalized_data:
+            ids_int_values = self._unnormalize(ids_values)
+        else:
+            ids_int_values = {id_: int(value)for id_, value in ids_values.items()}
+        
+        ids_int_values = self._encode_sign(data_name, ids_int_values)            
+        ids = list(ids_values.keys())
+        reg = sts3215_registers[data_name].address
+        len_ = sts3215_registers[data_name].size
+        bytes_values = [ids_int_values[id_].to_bytes(len_, "little") for id_ in ids]
+        regs = [MotorBusSyncWriteReg(addr=reg, values=bytes_values)]
+        self._proxy.sync_write(ids, regs)
+        
+
+
 
     def _read(
         self,
