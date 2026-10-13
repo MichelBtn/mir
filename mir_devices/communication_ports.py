@@ -7,37 +7,83 @@ from PySide6.QtCore import QObject
 import socket
 from concurrent.futures import Future
 import glob
-from pathlib import Path
 
-def find_available_ports(filter: str|None = None):
+def find_serial_ports_windows() -> list[str]:
     from serial.tools import list_ports  # Part of pyserial library
+    # List COM ports using pyserial
+    return [port.device for port in list_ports.comports()]
 
-    if platform.system() == "Windows":
-        # List COM ports using pyserial
-        ports = [port.device for port in list_ports.comports()]
-    else:  # Linux/macOS
-        # List /dev/tty* ports for Unix-based systems
-        ports = [str(path) for path in Path("/dev").glob("tty*")]
-    return ports
+# --- macOS (Darwin) ---------------------------------------------------------
+# Linux : /dev/ttyUSB* (ponts USB-UART), /dev/ttyACM* (CDC-ACM).
+# macOS : pas de ttyUSB*/ttyACM*. Noms observés :
+#   ponts USB-UART : /dev/cu.usbserial-*, /dev/tty.usbserial-*,
+#                    *wchusbserial* (CH340/WCH), *SLAB_* (CP210x Silabs), *UART*
+#   CDC-ACM        : /dev/cu.usbmodem*, /dev/tty.usbmodem*
+#                    (ex. /dev/cu.usbmodem5b3d0492331)
+_USB_UART_GLOBS_DARWIN = (
+    "/dev/cu.usbserial*",
+    "/dev/tty.usbserial*",
+    "/dev/cu.wchusbserial*",
+    "/dev/tty.wchusbserial*",
+    "/dev/cu.SLAB*",
+    "/dev/tty.SLAB*",
+    "/dev/cu.UART*",
+    "/dev/tty.UART*",
+)
+_ACM_GLOBS_DARWIN = (
+    "/dev/cu.usbmodem*",
+    "/dev/tty.usbmodem*",
+)
+
+def _glob_many(patterns: tuple[str, ...]) -> list[str]:
+    found: list[str] = []
+    for pattern in patterns:
+        found += glob.glob(pattern)
+    return found
+
+
+def _pyserial_darwin_matches(predicate) -> list[str]:
+    """Complément pyserial sur macOS (glob seul peut rater un pilote)."""
+    try:
+        from serial.tools import list_ports
+        devices = [port.device for port in list_ports.comports()]
+    except Exception:
+        return []
+    return [d for d in devices
+            if "bluetooth" not in d.lower() and predicate(d.lower())]
+
+
+def _unique_sorted(ports: list[str]) -> list[str]:
+    return sorted(set(ports), key=str.lower)
 
 def find_usb_serial_ports():
-    if platform.system() == "Windows":
-        return find_available_ports()
-    return [port for port in find_available_ports() if port.startswith("/dev/ttyUSB")]
+    system = platform.system()
+    #windows
+    if system == "Windows":
+        return find_serial_ports_windows()
+    #macOS
+    if system == "Darwin":
+        # Ponts USB-UART + CDC-ACM (un ESP32-S2/S3 natif apparaît en usbmodem).
+        candidates = _glob_many(_USB_UART_GLOBS_DARWIN + _ACM_GLOBS_DARWIN)
+        candidates += _pyserial_darwin_matches(
+            lambda d: ("usbserial" in d or "usbmodem" in d or "wchusbserial" in d
+                       or "slab" in d or "uart" in d))
+        return _unique_sorted(candidates)
+    #linux
+    return sorted(glob.glob("/dev/ttyUSB*"))
 
 def find_acm_serial_ports():
-    if platform.system() == "Windows":
-        return find_available_ports()
-    return [port for port in find_available_ports() if port.startswith("/dev/ttyACM")]
-
-def find_all_serial_ports():
-    if platform.system() == "Windows":
-        return find_available_ports()
-    return [port for port in find_available_ports() if port.startswith("/dev/ttyACM") or port.startswith("/dev/ttyUSB")]
-    
-def serial_get_available_ports() -> list[str]:
-    candidates = glob.glob("/dev/ttyUSB*") + glob.glob("/dev/ttyACM*")
-    return sorted(candidates)
+    system = platform.system()
+    #windows
+    if system == "Windows":
+        return find_serial_ports_windows()
+    #macOS
+    if system == "Darwin":
+        candidates = _glob_many(_ACM_GLOBS_DARWIN)
+        candidates += _pyserial_darwin_matches(lambda d: "usbmodem" in d)
+        return _unique_sorted(candidates)
+    #Linux        
+    return sorted(glob.glob("/dev/ttyACM*"))
 
 class CommPort(QObject):
     def __init__(self, end_of_line:str="\n", command_prefix="#", connect_timeout=5.0, command_timeout=1.0):
