@@ -260,10 +260,14 @@ MotorBusResponseFrame MotorBus::handle_read(const uint8_t* frame, uint16_t len) 
 }
 
 MotorBusResponseFrame MotorBus::handle_sync_write(const uint8_t* frame, uint16_t len) {
-    // SYNC_WRITE : [cmd, nid, id.., nreg, (reg, len, data_m0.., data_m1..)..]
+    // SYNC_WRITE : [cmd, nid, id.., nreg, (reg, len, data_m0.., gap_L, gap_H)..]
     //   -> [status]. Par registre : nid blocs de len octets (bloc i = valeur
     //   du moteur i), soit nreg appels SCS::syncWrite. len est commun à tous
-    //   les moteurs d'un même registre (contrainte SCS).
+    //   les moteurs d'un même registre (contrainte SCS). gap = attente en µs
+    //   (uint16 little-endian) après l'écriture, pour laisser le temps au
+    //   servo de prendre en compte le registre avant le suivant (ex. vitesse
+    //   reg 46 puis consigne reg 42). Ignorée après le dernier registre pour
+    //   ne pas retarder la réponse. Bloque la boucle pendant l'attente.
     // syncWrite est un broadcast sans réponse : pas de STS_NACK possible,
     // le retour est OK dès que la trame est valide et émise.
     if (frame == nullptr || len < 5) { // garde rapide, contrôles stricts dessous
@@ -304,7 +308,7 @@ MotorBusResponseFrame MotorBus::handle_sync_write(const uint8_t* frame, uint16_t
             return make_response_frame(MotorBusErrors::BAD_LEN);
         }
         uint16_t need = (uint16_t)nid * slen;
-        if (off + need > len) {
+        if (off + need + 2 > len) { // +2 : gap_L, gap_H
             return make_response_frame(MotorBusErrors::BAD_FRAME);
         }
         // Limite protocole SCS : mesLen = (slen+1)*nid+4 tient sur un octet.
@@ -313,15 +317,22 @@ MotorBusResponseFrame MotorBus::handle_sync_write(const uint8_t* frame, uint16_t
         }
         uint8_t* data = const_cast<uint8_t*>(&frame[off]);
         off += need;
+        uint16_t gap_us = (uint16_t)frame[off] | ((uint16_t)frame[off + 1] << 8);
+        off += 2;
         #ifdef __DEBUG_MOTOR_BUS
         Serial.print("SYNC_WRITE: NID=");
         Serial.print(nid);
         Serial.print(" REG=");
         Serial.print(reg, HEX);
         Serial.print(" LEN=");
-        Serial.println(slen);
+        Serial.print(slen);
+        Serial.print(" GAP_US=");
+        Serial.println(gap_us);
         #endif
         sc.syncWrite(ids, nid, reg, data, slen);
+        if (gap_us != 0 && r + 1 < nreg) {
+            delayMicroseconds(gap_us);
+        }
     }
     if (off != len) { // octets traînants : trame mal formée
         return make_response_frame(MotorBusErrors::BAD_FRAME);

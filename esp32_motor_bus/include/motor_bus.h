@@ -12,10 +12,11 @@ struct MotorBusResponseFrame {
 //   STATUS : [0x01] -> [status, bus_init_status]
 //   WRITE : [0x02, id, addr, d0(, d1)] -> [status]
 //   READ  : [0x03, id, addr, count]    -> [status, d0, ...]
-//   SYNC_WRITE : [0x04, nid, id.., nreg, (reg, len, data_m0.., data_m1.....)..] -> [status]
+//   SYNC_WRITE : [0x04, nid, id.., nreg, (reg, len, data_m0.., gap_L, gap_H)..] -> [status]
 //     Valeur propre à chaque moteur : par registre, nid blocs de len octets
 //     (moteur i -> bloc i), soit nreg appels syncWrite. len commun par
-//     registre (contrainte SCS).
+//     registre (contrainte SCS). gap = attente µs (uint16 little-endian)
+//     après l'écriture du registre, ignorée pour le dernier (réponse immédiate).
 // Données en little-endian (poids faible d'abord), comme le bus SCS.
 enum class MotorBusCommands : uint8_t {
     CMD_STATUS = 0x01,
