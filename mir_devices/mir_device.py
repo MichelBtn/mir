@@ -164,6 +164,10 @@ class ImirFeetechMotorBus(mirDevice):
     @abstractmethod
     def mir_read_register_by_id(self, data_name: str, motor_id: int, num_retry: int = 0) ->int:
         pass
+    
+    @abstractmethod
+    def mir_write_register(self, data_name: str, motor: str, value: int, num_retry: int = 0) ->None:
+        pass
 
     @abstractmethod
     def mir_write_register_by_id(self, data_name: str, motor_id: int, value: int, num_retry: int = 0) ->None:
@@ -265,6 +269,10 @@ class ImirFeetechMotorBus(mirDevice):
         """Réinitialise la calibration de tous les moteurs."""
         pass
 
+    @abstractmethod
+    def mir_set_half_turn_homings(self) -> dict:
+        pass
+    
     @abstractmethod
     def mir_calibrate(self, homing_offsets: dict, range_mins: dict, range_maxes: dict) -> None:
         """Calibre les moteurs avec les paramètres fournis."""

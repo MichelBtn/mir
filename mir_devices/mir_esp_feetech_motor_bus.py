@@ -610,6 +610,9 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         value = self._read_reg(reg.address, reg.size,  motor_id)
         return value
     
+    def mir_write_register(self, data_name: str, motor: str, value: int, num_retry: int = 0) ->None:
+        self._write(data_name, motor, value, normalize=False)
+
     def mir_write_register_by_id(self, data_name: str, motor_id: int, value: int, num_retry: int = 0) ->None:
         reg = sts3215_registers[data_name]
         self._write_reg(reg.address, reg.size,  motor_id, value)
@@ -693,6 +696,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         # Un seul appel sync_write NREG=2 : vitesse puis consigne, avec
         # temporisation firmware entre les deux. Vitesses en RPM, converties
         # comme dans mir_goal_velocities.
+        raw_velocities: RegValue | dict[str, RegValue]
         if isinstance(velocities, dict):
             raw_velocities = {name: int(val / RPM_PER_UNIT + 0.5) for name, val in velocities.items()}
         elif isinstance(velocities, (int, float)):
@@ -787,6 +791,15 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
             self._write("Homing_Offset", motor, calibration.homing_offset)
             self._write("Min_Position_Limit", motor, calibration.range_min)
             self._write("Max_Position_Limit", motor, calibration.range_max)
+
+    def mir_set_half_turn_homings(self) -> dict:
+        self.mir_reset_calibration()
+        actual_positions = self.mir_read_raw_positions()
+        homing_offsets = {}
+        for motor, pos in actual_positions.items():
+            homing_offsets[motor] = int(pos) - int(4095 / 2)
+            self.mir_write_register("Homing_Offset", motor, homing_offsets[motor])
+        return homing_offsets
 
     def mir_calibrate(self, homing_offsets: dict, range_mins: dict, range_maxes:dict) -> None: 
         self._check_mir_is_ready()

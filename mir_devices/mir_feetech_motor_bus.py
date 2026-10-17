@@ -102,14 +102,14 @@ class mirMotor(Motor):
     torque_limit: int = 250 #couple maximum en 0.1% 
 
 class MotorBusType(Enum):
-    SERIAL_FEETECH_MOTOR_BUS = "serial_feetech",
+    SERIAL_FEETECH_MOTOR_BUS = "serial_feetech"
     ESP32_FEETECH_MOTOR_BUS = "esp32_feetech"
 
 @dataclass
 class mirMotorBusConfiguration:
     motors: dict[str, mirMotor]
     calibration: dict[str, mirMotorCalibration]
-
+    motor_bus_type: str = ""
     @staticmethod
     def create_motor_bus_from_dict(data: dict[str, Any], dacite_config: dacite.Config) -> mirMotorBusConfiguration:
         motor_bus_type = data.get("motor_bus_type", MotorBusType.SERIAL_FEETECH_MOTOR_BUS.value)
@@ -119,22 +119,26 @@ class mirMotorBusConfiguration:
         motors = {k: dacite.from_dict(mirMotor, v, dacite_config) for k, v in motors_dict.items()}
         if motor_bus_type == MotorBusType.SERIAL_FEETECH_MOTOR_BUS.value:
             motor_port = data.get("motor_port", "")
-            return mirSerialFeetechMotorBusConfiguration(motor_port=motor_port, motors=motors, calibration=calibration)
+            return mirSerialFeetechMotorBusConfiguration(motor_bus_type=motor_bus_type, motor_port=motor_port, motors=motors, calibration=calibration)
         if motor_bus_type == MotorBusType.ESP32_FEETECH_MOTOR_BUS.value:
             ip_address = data.get("ip_address", "")
-            return mirEspFeetechMotorBusConfiguration(ip_address=ip_address, motors=motors, calibration=calibration)            
+            return mirEspFeetechMotorBusConfiguration(motor_bus_type=motor_bus_type, ip_address=ip_address, motors=motors, calibration=calibration)            
         raise ValueError(f"Invalid motor bus type: {motor_bus_type}")
 
 @dataclass
 class mirSerialFeetechMotorBusConfiguration(mirMotorBusConfiguration):
-    motor_port: str
+    motor_port: str = ""
+    def __post_init__(self):
+        self.motor_bus_type = MotorBusType.SERIAL_FEETECH_MOTOR_BUS.value
     def __str__(self) -> str:
         ids= ", ".join([f"{key}:ID={motor.id} " for key, motor in self.motors.items()])
         return f"{self.motor_port}. {ids}"
 
 @dataclass
 class mirEspFeetechMotorBusConfiguration(mirMotorBusConfiguration):
-    ip_address: str
+    ip_address: str = ""
+    def __post_init__(self):
+        self.motor_bus_type = MotorBusType.ESP32_FEETECH_MOTOR_BUS.value
     def __str__(self) -> str:
         ids= ", ".join([f"{key}:ID={motor.id} " for key, motor in self.motors.items()])
         return f"{self.ip_address}. {ids}"
@@ -268,6 +272,9 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         value,*_ = self._read(reg.address, reg.size,  motor_id, num_retry=num_retry)
         return value
     
+    def mir_write_register(self, data_name: str, motor: str, value: int, num_retry: int = 0) ->None:
+        self.write(data_name, motor, value, normalize=False, num_retry=num_retry)
+
     def mir_write_register_by_id(self, data_name: str, motor_id: int, value: int, num_retry: int = 0) ->None:
         reg = sts3215_registers[data_name]
         self._write(reg.address, reg.size,  motor_id, value, num_retry=num_retry)
@@ -419,6 +426,9 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         self._check_mir_is_ready()
         super().reset_calibration(None) 
         self._set_is_calibrated(False)    
+
+    def mir_set_half_turn_homings(self) -> dict:
+        return self.set_half_turn_homings()
 
     def mir_calibrate(self, homing_offsets: dict, range_mins: dict, range_maxes:dict) -> None: 
         self._check_mir_is_ready()

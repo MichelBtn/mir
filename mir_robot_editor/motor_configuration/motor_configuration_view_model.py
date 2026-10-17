@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from mir_robot_editor.motor_configuration.registers_viewmodel import RegistersViewModel
 from mir_robot_editor.motor_configuration.calibration_viewmodel import CalibrationViewModel
 from mir_utils.ui.dialogs import IDialogProvider
-from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirMotor
+from mir_devices.mir_feetech_motor_bus import ImirFeetechMotorBus, mirMotor
 from mir_utils.ui.view_model_base import ViewModelBase
-
+from mir_devices.mir_devices_factory import DefaultFeetechMotorBusFactory
 from mir_robot.mir_robot_config import mirRobotConfig
 
 @dataclass
@@ -25,13 +25,17 @@ class MotorConfigurationViewModel(ViewModelBase):
     def __init__(self, dialogProvider : IDialogProvider, config:mirRobotConfig):
         super().__init__(dialogProvider)
         self._motors_config = config.motor_bus
-        self._motors = config.motor_bus.motors
-        self._temp_bus = mirFeetechMotorsBus(config.motor_bus)
+        if self._motors_config is None:
+            raise ValueError("Motors config is None")
+        self._motors = self._motors_config.motors
+        if self._motors is None:
+            raise ValueError("Motors config is None")
+        self._temp_bus: ImirFeetechMotorBus|None = DefaultFeetechMotorBusFactory().create_bus(self._motors_config)
         self._motors_data: dict[str, MotorConfigurationViewModel_MotorData] = {}
         self._temp_bus.mir_connect()
         self._temp_bus.mir_configure_motors()
         self._motors_data = {
-            key: MotorConfigurationViewModel_MotorData(value, 0, 0)
+            key: MotorConfigurationViewModel_MotorData(value, "0", 0)
             for key, value in self._motors.items()
         }
         self._update_motors_data_with_pos()
@@ -43,10 +47,14 @@ class MotorConfigurationViewModel(ViewModelBase):
 
     @property
     def is_calibrated(self) -> bool:
+        if self._temp_bus is None:
+            raise RuntimeError("Bus is not initialized")
         return self._temp_bus.mir_is_calibrated()
             
     @override
     def _enter_context(self):
+        if self._temp_bus is None:
+            raise RuntimeError("Bus is not initialized")        
         self._temp_bus.mir_is_calibrated_changed.subscribe(self._on_bus_is_calibrated_changed)
         self._timer = QTimer()
         self._timer.timeout.connect(self._on_timer)
@@ -74,6 +82,8 @@ class MotorConfigurationViewModel(ViewModelBase):
     def calibrate_from_motors(self):
         if self._motors_config is None:
             return
+        if self._temp_bus is None:
+            raise RuntimeError("Bus is not initialized")            
         cal = self._temp_bus.mir_read_calibration_from_motors()
         if cal is None:
             self._dialogProvider.information("Charger calibration moteurs", "Les calibrations des moteurs ne sont pas valides")
@@ -131,6 +141,8 @@ class MotorConfigurationViewModel(ViewModelBase):
             self._temp_bus.mir_emergency_stop()
 
     def _update_motors_data_with_pos(self):
+        if self._temp_bus is None:
+            raise RuntimeError("Bus is not initialized")
         motors_pos = self._temp_bus.mir_read_positions()
         for key in self._motors_data:
             pos = motors_pos[key]

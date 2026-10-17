@@ -2,7 +2,7 @@
     "id": "mir_robot",
     "calibration_dir": null,
     "motor_bus": {
-        "motor_port": "/dev/tty_motor_bus0",
+        "motor_bus_type": "esp32_feetech",
         "motors": {
             "joint_1": {
                 "id": 2,
@@ -27,22 +27,8 @@
                 "torque_limit": 250
             }
         },
-        "calibration": {
-            "joint_1": {
-                "id": 2,
-                "drive_mode": 0,
-                "homing_offset": -1593,
-                "range_min": 898,
-                "range_max": 3138
-            },
-            "joint_2": {
-                "id": 3,
-                "drive_mode": 0,
-                "homing_offset": 914,
-                "range_min": 872,
-                "range_max": 3210
-            }
-        }
+        "calibration": {},
+        "ip_address": "192.168.1.12"
     },
     "sensors": {},
     "observations": {

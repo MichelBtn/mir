@@ -1,11 +1,11 @@
-from lerobot.motors.feetech import FeetechMotorsBus
 from PySide6 import QtCore
 from mir_devices.mir_feetech_motor_bus import sts3215_registers, Register
 from mir_utils.ui.view_model_base import ViewModelBase
+from mir_devices.mir_feetech_motor_bus import ImirFeetechMotorBus
 
 class RegistersViewModel(ViewModelBase):
 
-    def __init__(self, bus: FeetechMotorsBus, motor_name: str):
+    def __init__(self, bus: ImirFeetechMotorBus, motor_name: str):
         self._bus = bus
         self._motor_name = motor_name
         self._registers = sts3215_registers
@@ -34,7 +34,7 @@ class RegistersViewModel(ViewModelBase):
         rows = self._rows_sorted_by_name if sort_by_name else self._rows
         for row in rows:
             try:
-                value = self._bus.read(row.name, self._motor_name, normalize=False)
+                value = self._bus.mir_read_register(row.name, self._motor_name)
                 row.set_value(str(value))
             except Exception:
                 row.set_value("error")
@@ -44,14 +44,15 @@ class RegistersViewModel(ViewModelBase):
         self._check_initialized()
         for reg in self._rows:
             if read_all or reg.read_only:
-                value = self._bus.read(reg.name, self._motor_name, normalize=False)
+                value = self._bus.mir_read_register(reg.name, self._motor_name)
                 reg.set_value(str(value))
-                self.callback(reg)
+                if self.callback is not None:
+                    self.callback(reg)
             
     def write(self, reg_name:str, value):
         reg = self._registers[reg_name]
-        self._bus.write(reg_name, self._motor_name, value, normalize=False)
-        value = self._bus.read(reg_name, self._motor_name, normalize=False)
+        self._bus.mir_write_register(reg_name, self._motor_name, value)
+        value = self._bus.mir_read_register(reg_name, self._motor_name)
         reg.set_value(str(value))   
         self.update_fields(read_all=True)
         

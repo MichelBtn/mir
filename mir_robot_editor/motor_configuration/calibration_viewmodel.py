@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import Enum
 from lerobot.motors.feetech import OperatingMode
 from contextlib import contextmanager
-from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus
+from mir_devices.mir_feetech_motor_bus import ImirFeetechMotorBus
 from mir_utils.ui.view_model_base import ViewModelBase
 from mir_utils.ui.dialogs import IDialogProvider
 
@@ -29,13 +29,13 @@ class CalibrationViewModel(ViewModelBase):
     cancelled = Signal()
 
 
-    def __init__(self, bus: mirFeetechMotorsBus, dialog_provider: IDialogProvider):
+    def __init__(self, bus: ImirFeetechMotorBus, dialog_provider: IDialogProvider):
         super().__init__(dialog_provider)
         self._bus = bus
         self._stage = CalibrationStage.NoneStage
         self._timer = QTimer()
         self._timer.timeout.connect(self.update_positions)
-        self._motors_list = list(self._bus.motors.keys())
+        self._motors_list = list(self._bus.mir_get_motors().keys())
         self._motors_data = {name : CalibrationMotorData() for name in self._motors_list}
         self._stage_captions = {
             CalibrationStage.Homing: "Homing Offset",
@@ -53,9 +53,9 @@ class CalibrationViewModel(ViewModelBase):
     
     def _enter_context(self):
         for motor in self._motors_list:
-            self._bus.write("Torque_Enable", motor, 0)
-            self._bus.write("Lock", motor, 0)
-            self._bus.write("Operating_Mode", motor, OperatingMode.POSITION.value)
+            self._bus.mir_write_register("Torque_Enable", motor, 0)
+            self._bus.mir_write_register("Lock", motor, 0)
+            self._bus.mir_write_register("Operating_Mode", motor, OperatingMode.POSITION.value)
         self._bus.mir_store_calibration()
         self._bus.mir_reset_calibration()             
         self.enter_homing_stage()
@@ -65,25 +65,25 @@ class CalibrationViewModel(ViewModelBase):
 
         self._timer.stop()
         for motor in self._motors_list:
-            self._bus.write("Lock", motor, 1)
+            self._bus.mir_write_register("Lock", motor, 1)
 
     #TODO prendre en compte le mode VELOCITY pour les positions normalisées
     def update_positions(self):
         if self._do_not_update_positions:
             return
-        positions= self._bus.sync_read("Present_Position", self._motors_list, normalize=self.is_bus_calibrated)
+        positions= self._bus.mir_read_positions(self._motors_list)
         if self._stage == CalibrationStage.Homing:
             for name, pos in positions.items():
-                self._motors_data[name] = CalibrationMotorData(min=pos, home=pos, max=pos)  
+                self._motors_data[name] = CalibrationMotorData(min=int(pos), home=int(pos), max=int(pos))  
         elif self._stage in (CalibrationStage.MinRange, CalibrationStage.MaxRange):
             if self._stage == CalibrationStage.MinRange:
                 self._mins = positions.copy()
             else:
                 self._maxes = positions.copy()
             for motor, data in self._motors_data.items():
-                data.min  = self._mins[motor]
-                data.home = self._start_positions[motor]
-                data.max  = self._maxes[motor]
+                data.min  = int(self._mins[motor])
+                data.home = int(self._start_positions[motor])
+                data.max  = int(self._maxes[motor])
                 data.home_checked = abs(self._start_positions[motor] - 2047) < 2
                 data.min_checked  = (self._start_positions[motor] - self._mins[motor]) > 10
                 if self._stage == CalibrationStage.MaxRange:
@@ -92,7 +92,7 @@ class CalibrationViewModel(ViewModelBase):
         self.state_changed.emit()
 
     def get_motors(self):
-        return self._bus.motors
+        return list(self._bus.mir_get_motors().keys())
 
     def enter_homing_stage(self):
         self._stage = CalibrationStage.Homing
@@ -108,8 +108,8 @@ class CalibrationViewModel(ViewModelBase):
 
     def exit_homing_stage(self):
         with self._pause_updates():
-            self._homing_offsets = self._bus.set_half_turn_homings()
-            self._start_positions = self._bus.sync_read("Present_Position", self._motors_list, normalize=False)
+            self._homing_offsets = self._bus.mir_set_half_turn_homings()
+            self._start_positions = self._bus.mir_read_positions(self._motors_list)
             self._mins  = self._start_positions.copy()
             self._maxes = self._start_positions.copy()
             for data in self._motors_data.values():
