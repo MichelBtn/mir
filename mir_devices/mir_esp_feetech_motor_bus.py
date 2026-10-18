@@ -22,9 +22,8 @@ import struct
 import socket
 import time
 from enum import Enum
-import dacite
 from typing_extensions import override
-from typing import TypeAlias, Any, cast
+from typing import TypeAlias
 
 RegValue : TypeAlias = int|float
 
@@ -51,6 +50,7 @@ class MotorBusCommands(Enum):
     CMD_WRITE = 0x02
     CMD_READ = 0x03
     CMD_SYNC_WRITE = 0x04
+    CMD_SYNC_READ = 0x05
 
 class MotorBusErrors(Enum):
     OK =            0x00
@@ -245,11 +245,53 @@ class Esp32MotorBusProxy:
             )
             raise            
 
+    def sync_read(self, ids: list[int], addr: int, count: int) -> list[bytes]:
+        # [0x05, NID, IDs, ADDR, COUNT] -> [status, data_m0(COUNT)..]
+        # count octets contigus depuis addr sur chaque moteur ; le résultat est
+        # une liste de bytes dans l'ordre des ids.
+        self._check_not_connected()
+        try:
+            nid = len(ids)
+            if not 1 <= nid <= 255:
+                raise ValueError(f"NID invalide : {nid}")
+            for id_ in ids:
+                if not 0 <= id_ <= 0xFD:
+                    raise ValueError(f"ID servo invalide : {id_:#x}")
+            if not 0 <= addr <= 0xFF:
+                raise ValueError(f"Adresse registre invalide : {addr:#x}")
+            if not 1 <= count <= 255:
+                raise ValueError(f"count invalide : {count}")
+            if nid * count > 255:
+                raise ValueError(f"sync_read : trop de données ({nid} x {count})")
+            data = bytearray([MotorBusCommands.CMD_SYNC_READ.value])
+            data.extend(nid.to_bytes(1, "little"))
+            for id_ in ids:
+                data.extend(id_.to_bytes(1, 'little'))
+            data.extend(addr.to_bytes(1, 'little'))
+            data.extend(count.to_bytes(1, 'little'))
+            response = self._send(bytes(data))
+            if len(response) < 1:
+                raise MotorBusError("réponse vide")
+            status = response[0]
+            if status != MotorBusErrors.OK.value:
+                raise MotorBusError(f"CMD_SYNC_READ addr={addr:#x} : {status} (0x{status:02X})")
+            if len(response) != 1 + nid * count:
+                raise MotorBusError(
+                    f"trame non conforme : {len(response)} octet(s) reçu(s), {1 + nid * count} attendu(s)"
+                )
+            payload = response[1:]
+            return [payload[i * count:(i + 1) * count] for i in range(nid)]
+        except Exception as e:
+            logger.exception(
+                f"Failed to sync_read @{addr=} ({count=}) on {ids=}): {e}"
+            )
+            raise
+
     def broadcast_ping(self) -> list[int]:
         self._check_not_connected()
         return []
 
-    
+
 class mirEspFeetechMotorBus(ImirFeetechMotorBus):
    
     _bus_connected : dict[str, bool] = {}
@@ -381,8 +423,6 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
             value = self._unnormalize({id_: value})[id_]
 
         value = self._encode_sign(data_name, {id_: int(value)})[id_]
-        # TODO: remove me (debug)
-        logger.debug(f"[MOTOR_BUS] {data_name=}, {id_=}, {value=}, {norm_value=}")
         self._write_reg(addr, length, id_, value)
 
     def _write_reg(
@@ -485,14 +525,22 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         normalize: bool = True,
         num_retry: int = 0,
     ) -> dict[str, RegValue]:
-        read_values = {}
+        # Un seul appel sync_read : même registre (addr, size) sur tous les
+        # moteurs. Décodage signe puis normalisation, comme _read.
         if motors is None:
             motors = list(self._mir_motors.keys())
         elif isinstance(motors, str):
             motors = [motors]
-        for motor in motors:
-            read_values[motor] = self._read(data_name, motor, normalize=normalize)
-        return read_values
+        if not motors:
+            return {}
+        reg = sts3215_registers[data_name]
+        ids = [self._mir_motors[motor].id for motor in motors]
+        raw_values = self._proxy.sync_read(ids, reg.address, reg.size)
+        id_values = {id_: int.from_bytes(raw, "little") for id_, raw in zip(ids, raw_values)}
+        id_values = self._decode_sign(data_name, id_values)
+        if normalize and data_name in self._normalized_data:
+            id_values = self._normalize(id_values)
+        return {motor: id_values[self._mir_motors[motor].id] for motor in motors}
             
 
     def _read_calibration(self) -> dict[str, mirMotorCalibration]:

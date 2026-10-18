@@ -17,12 +17,17 @@ struct MotorBusResponseFrame {
 //     (moteur i -> bloc i), soit nreg appels syncWrite. len commun par
 //     registre (contrainte SCS). gap = attente µs (uint16 little-endian)
 //     après l'écriture du registre, ignorée pour le dernier (réponse immédiate).
+//   SYNC_READ : [0x05, nid, id.., addr, count] -> [status, data_m0.., data_m1..]
+//     Lit count octets contigus à partir de addr sur les nid moteurs ; les
+//     données reviennent groupées par moteur, dans l'ordre des IDs. count est
+//     commun à tous les moteurs (contrainte SCS syncRead).
 // Données en little-endian (poids faible d'abord), comme le bus SCS.
 enum class MotorBusCommands : uint8_t {
     CMD_STATUS = 0x01,
     CMD_WRITE = 0x02,
     CMD_READ = 0x03,
     CMD_SYNC_WRITE = 0x04,
+    CMD_SYNC_READ = 0x05,
 };
 
 enum class MotorBusErrors : uint8_t {
@@ -57,6 +62,7 @@ private:
     MotorBusResponseFrame handle_read(const uint8_t* frame, uint16_t len);
     MotorBusResponseFrame handle_status(const uint8_t* frame, uint16_t len);
     MotorBusResponseFrame handle_sync_write(const uint8_t* frame, uint16_t len);
+    MotorBusResponseFrame handle_sync_read(const uint8_t* frame, uint16_t len);
     MotorBusInitStatus _init_status = MotorBusInitStatus::NO_RESPONSE;
 public:
     void update_data();

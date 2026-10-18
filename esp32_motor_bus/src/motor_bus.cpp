@@ -136,6 +136,8 @@ MotorBusResponseFrame MotorBus::parse_and_run(
             return handle_read(frame, len);
         case MotorBusCommands::CMD_SYNC_WRITE:
             return handle_sync_write(frame, len);
+        case MotorBusCommands::CMD_SYNC_READ:
+            return handle_sync_read(frame, len);
         default:
             #ifdef __DEBUG_MOTOR_BUS
             Serial.print("MotorBus: unknown command 0x");
@@ -338,4 +340,81 @@ MotorBusResponseFrame MotorBus::handle_sync_write(const uint8_t* frame, uint16_t
         return make_response_frame(MotorBusErrors::BAD_FRAME);
     }
     return make_response_frame(MotorBusErrors::OK);
+}
+
+MotorBusResponseFrame MotorBus::handle_sync_read(const uint8_t* frame, uint16_t len) {
+    // SYNC_READ : [cmd, nid, id.., addr, count] -> [status, data_m0.., data_m1..]
+    //   count octets contigus depuis addr sur les nid moteurs, données groupées
+    //   par moteur dans l'ordre des IDs. count commun (contrainte SCS syncRead).
+    //   Un seul syncReadPacketTx puis un syncReadPacketRx par moteur.
+    if (frame == nullptr || len < 5) { // cmd + nid + 1 id + addr + count min
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    uint16_t off = 1;
+    uint8_t nid = frame[off++];
+    if (nid == 0) {
+        return make_response_frame(MotorBusErrors::BAD_LEN);
+    }
+    if (off + nid > len) {
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    for (uint8_t i = 0; i < nid; ++i) {
+        if (frame[off + i] > 0xFD) { // 0xFE = broadcast, invalide comme cible
+            return make_response_frame(MotorBusErrors::BAD_ARG);
+        }
+    }
+    // syncReadPacketTx ne modifie pas le tableau d'IDs (lecture seule).
+    uint8_t* ids = const_cast<uint8_t*>(&frame[off]);
+    off += nid;
+    if (off + 2 > len) {
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    uint8_t addr  = frame[off++];
+    uint8_t count = frame[off++];
+    if (count == 0) {
+        return make_response_frame(MotorBusErrors::BAD_LEN);
+    }
+    if (off != len) { // octets traînants : trame mal formée
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    // Capacité réponse : 1 (status) + nid*count <= sizeof(response_buf).
+    if ((uint16_t)nid * count > 255) {
+        return make_response_frame(MotorBusErrors::BAD_LEN);
+    }
+
+    #ifdef __DEBUG_MOTOR_BUS
+    Serial.print("SYNC_READ: NID=");
+    Serial.print(nid);
+    Serial.print(" ADDR=");
+    Serial.print(addr, HEX);
+    Serial.print(" COUNT=");
+    Serial.println(count);
+    #endif
+
+    // Purge le buffer RX : syncReadPacketTx, contrairement à Read/syncWrite,
+    // n'appelle pas rFlushSCS ; des checksums résiduels traîneraient d'une
+    // transaction précédente.
+    while (Serial2.available()) {
+        Serial2.read();
+    }
+
+    sc.syncReadPacketTx(ids, nid, addr, count);
+    uint8_t data[255];
+    for (uint8_t i = 0; i < nid; ++i) {
+        // Réponse par moteur, dans l'ordre des IDs ; 0 = échec (timeout,
+        // en-tête). Erreur servo (Error) non traitée, comme Read.
+        if (sc.syncReadPacketRx(ids[i], &data[i * count]) != count) {
+            #ifdef __DEBUG_MOTOR_BUS
+            Serial.print("SYNC_READ: no/failed response for ID=");
+            Serial.println(ids[i]);
+            #endif
+            return make_response_frame(MotorBusErrors::STS_NACK);
+        }
+        // La lib SCS ne consomme pas l'octet de checksum en fin de réponse
+        // (SCS.cpp:325, bBuf[4] déclaré mais 3 octets lus). On le jette, sinon
+        // un checksum 0xFF serait pris pour l'en-tête FF FF de la réponse
+        // suivante et désynchroniserait la trame.
+        Serial2.read();
+    }
+    return make_response_frame(MotorBusErrors::OK, data, (uint16_t)nid * count);
 }

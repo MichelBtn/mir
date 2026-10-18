@@ -2,6 +2,8 @@ from PySide6 import QtCore
 from mir_devices.mir_feetech_motor_bus import sts3215_registers, Register
 from mir_utils.ui.view_model_base import ViewModelBase
 from mir_devices.mir_feetech_motor_bus import ImirFeetechMotorBus
+import time
+from mir_utils.metrics import SimpleMovingAverage
 
 class RegistersViewModel(ViewModelBase):
 
@@ -13,6 +15,8 @@ class RegistersViewModel(ViewModelBase):
         self._rows_sorted_by_name = sorted(self._rows, key=lambda x: x.name)
         self.callback = None
         self.timer = QtCore.QTimer()
+        self._moving_average = SimpleMovingAverage(10)
+        self._counter = 0
 
     def _enter_context(self):
         self.timer.timeout.connect(self.update_fields)
@@ -42,13 +46,19 @@ class RegistersViewModel(ViewModelBase):
 
     def update_fields(self, read_all=False):
         self._check_initialized()
+        t0 = time.perf_counter()
         for reg in self._rows:
             if read_all or reg.read_only:
                 value = self._bus.mir_read_register(reg.name, self._motor_name)
                 reg.set_value(str(value))
                 if self.callback is not None:
                     self.callback(reg)
-            
+        t1 = time.perf_counter()
+        self._moving_average.add(t1-t0)
+        self._counter += 1
+        if self._counter % 10 == 0:
+            print(f"Temps de mise à jour moyen: {self._moving_average.average()*1000:.0f}ms")
+
     def write(self, reg_name:str, value):
         reg = self._registers[reg_name]
         self._bus.mir_write_register(reg_name, self._motor_name, value)

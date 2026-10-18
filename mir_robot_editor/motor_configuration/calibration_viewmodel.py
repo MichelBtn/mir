@@ -92,7 +92,7 @@ class CalibrationViewModel(ViewModelBase):
         self.state_changed.emit()
 
     def get_motors(self):
-        return list(self._bus.mir_get_motors().keys())
+        return self._bus.mir_get_motors()
 
     def enter_homing_stage(self):
         self._stage = CalibrationStage.Homing
