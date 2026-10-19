@@ -3,7 +3,7 @@ from typing_extensions import override
 from typing import cast
 from dataclasses import dataclass, field
 from loguru import logger
-from typing import Any
+from typing import Any, ClassVar
 import time
 from enum import Enum
 import dacite
@@ -142,6 +142,8 @@ class mirEspFeetechMotorBusConfiguration(mirMotorBusConfiguration):
     def __str__(self) -> str:
         ids= ", ".join([f"{key}:ID={motor.id} " for key, motor in self.motors.items()])
         return f"{self.ip_address}. {ids}"
+    DEVICE_TYPE: ClassVar[str] = "esp32_feetech"
+
 
 POSITION_SUFFIX = "position"
 VELOCITY_SUFFIX = "velocity"

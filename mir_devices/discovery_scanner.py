@@ -9,7 +9,7 @@ import ipaddress
 import psutil
 from dataclasses import dataclass
 from lerobot.motors import MotorNormMode
-from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirSerialFeetechMotorBusConfiguration, mirMotor
+from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirSerialFeetechMotorBusConfiguration, mirMotor, mirEspFeetechMotorBusConfiguration
 from mir_devices.mir_sensor import (mirPiCameraConfiguration,
                                     mirSensorConfiguration, 
                                     EspSensorSimulationConfiguration, 
@@ -43,7 +43,7 @@ class DiscoveryScanner():
         self._executor = ThreadPoolExecutor(max_workers=1)
         
     # ─── Scanner ─────────────────────────────────────────────────────────────────
-    def _parse_ip_response(self, ip: str, data: bytes) -> tuple[str | None, mirSensorConfiguration | None]:
+    def _parse_ip_response(self, ip: str, data: bytes) -> tuple[str | None, mirSensorConfiguration | mirEspFeetechMotorBusConfiguration | None]:
         try:
             payload = json.loads(data.decode())
             device_type = payload["type"]
@@ -76,9 +76,11 @@ class DiscoveryScanner():
                     sensor_type=device_type,
                     ip=ip,
                 )
-            #TODO esp motor bus
-            # elif device_type == mirEspMotorBusConfiguration.DEVICE_TYPE:
-            #     pass
+            elif device_type == mirEspFeetechMotorBusConfiguration.DEVICE_TYPE:
+                return f"esp_motor_bus_{ip}", mirEspFeetechMotorBusConfiguration(
+                    motors={f"joint_{i+1}": mirMotor(id=id_, model="sts3215", norm_mode=MotorNormMode.DEGREES) for i, id_ in enumerate(payload["motor_ids"])},
+                    calibration={},
+                    ip_address=ip)
             return None, None
         except Exception as e:
             logger.warning(f"[Scanner] Parse échoué pour {ip} : {e!r}")
