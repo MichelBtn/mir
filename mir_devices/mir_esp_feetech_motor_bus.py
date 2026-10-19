@@ -300,7 +300,7 @@ class Esp32MotorBusProxy:
         payload = MotorBusCommands.CMD_RESCAN_BUS.value.to_bytes(1, 'little')
         response = self._send(payload)
         if len(response) < 1 or response[0] != MotorBusErrors.OK.value or response[1] != MotorBusInitStatus.OK.value:
-            raise MotorBusError(f"CMD_RESCAN_BUS : {response[:1]}")
+            raise MotorBusError(f"CMD_RESCAN_BUS : {response[:2]}")
         return response
 
 class mirEspFeetechMotorBus(ImirFeetechMotorBus):
@@ -534,7 +534,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
         motors: str | list[str] | None = None,
         *,
         normalize: bool = True,
-        num_retry: int = 0,
+        num_retry: int = 1,
     ) -> dict[str, RegValue]:
         # Un seul appel sync_read : même registre (addr, size) sur tous les
         # moteurs. Décodage signe puis normalisation, comme _read.
@@ -546,7 +546,16 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
             return {}
         reg = sts3215_registers[data_name]
         ids = [self._mir_motors[motor].id for motor in motors]
-        raw_values = self._proxy.sync_read(ids, reg.address, reg.size)
+        for attempt in range(num_retry + 1):
+            try:
+                raw_values = self._proxy.sync_read(ids, reg.address, reg.size)
+                break
+            except MotorBusError:
+                if attempt == num_retry:
+                    raise
+                logger.warning(
+                    f"sync_read {data_name} en échec (tentative {attempt + 1}/{num_retry + 1}), nouvel essai"
+                )
         id_values = {id_: int.from_bytes(raw, "little") for id_, raw in zip(ids, raw_values)}
         id_values = self._decode_sign(data_name, id_values)
         if normalize and data_name in self._normalized_data:

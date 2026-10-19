@@ -424,10 +424,15 @@ MotorBusResponseFrame MotorBus::handle_sync_read(const uint8_t* frame, uint16_t 
             return make_response_frame(MotorBusErrors::STS_NACK);
         }
         // La lib SCS ne consomme pas l'octet de checksum en fin de réponse
-        // (SCS.cpp:325, bBuf[4] déclaré mais 3 octets lus). On le jette, sinon
-        // un checksum 0xFF serait pris pour l'en-tête FF FF de la réponse
-        // suivante et désynchroniserait la trame.
-        Serial2.read();
+        // (SCS.cpp:325, bBuf[4] déclaré mais 3 octets lus). On l'attend avant
+        // de le jeter : une lecture non bloquante peut le manquer (il est
+        // encore en transit), et un checksum 0xFF serait alors confondu avec
+        // l'en-tête FF FF de la réponse suivante -> NACK intermittent.
+        unsigned long t_start = millis();
+        while (!Serial2.available() && (millis() - t_start) < 2) { }
+        if (Serial2.available()) {
+            Serial2.read();
+        }
     }
     return make_response_frame(MotorBusErrors::OK, data, (uint16_t)nid * count);
 }
