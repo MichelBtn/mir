@@ -23,7 +23,7 @@ bool valid_uart_pins(int rx, int tx) {
 }
 
 MotorBusInitStatus MotorBus::init(uint32_t baud, int rx_pin, int tx_pin) {
-    _n_found = 0;
+    _baud = baud;
     if (!valid_uart_pins(rx_pin, tx_pin)) {
         _init_status = MotorBusInitStatus::UART_ERROR;
         return _init_status;
@@ -33,9 +33,15 @@ MotorBusInitStatus MotorBus::init(uint32_t baud, int rx_pin, int tx_pin) {
     }
     Serial2.begin(baud, SERIAL_8N1, rx_pin, tx_pin);
     sc.pSerial = &Serial2;
-    // Timeout court pour la découverte : temps fil de ~12 octets + marge servo.
-    // ≈ 10 ms à 1 Mbps, augmente automatiquement si baud faible.
-    sc.IOTimeOut = max(10UL, (12UL * 10UL * 1000UL) / baud + 5UL);
+    return scan_bus();
+}
+
+// Consomme les réponses encore en attente après un Ping broadcast réussi.
+// Trame attendue : FF FF ID 02 ERR CHK, validée comme Ping (LEN + checksum).
+MotorBusInitStatus MotorBus::scan_bus() {
+    _n_found = 0;
+
+    sc.IOTimeOut = max(10UL, (12UL * 10UL * 1000UL) / _baud + 5UL);
     _initialized = true;
 
     // Ping broadcast : chaque servo répond une fois, en rafale déterministe.
@@ -47,41 +53,35 @@ MotorBusInitStatus MotorBus::init(uint32_t baud, int rx_pin, int tx_pin) {
     if (probe >= 0 && probe <= 0xFD) {
         _found_ids[0] = (uint8_t)probe;
         _n_found = 1;
-        drain_broadcast_responses();
+        uint8_t win[6] = {0, 0, 0, 0, 0, 0};
+        unsigned long deadline = millis() + 30;
+        while ((long)(millis() - deadline) < 0) {
+            int c = Serial2.read();
+            if (c < 0) {
+                continue;
+            }
+            memmove(win, win + 1, 5);
+            win[5] = (uint8_t)c;
+            deadline = millis() + 10; // prolonge tant que des octets arrivent
+            if (win[0] == 0xFF && win[1] == 0xFF && win[3] == 0x02 && win[2] <= 0xFD &&
+                win[5] == (uint8_t)~(win[2] + win[3] + win[4])) {
+                bool known = false;
+                for (uint8_t i = 0; i < _n_found; ++i) {
+                    if (_found_ids[i] == win[2]) {
+                        known = true;
+                        break;
+                    }
+                }
+                if (!known && _n_found < MAX_FOUND_IDS) {
+                    _found_ids[_n_found++] = win[2];
+                }
+                memset(win, 0, sizeof(win));
+            }
+        }
     }
     sc.IOTimeOut = 100; // timeout nominal pour l'exploitation
     _init_status = (_n_found > 0) ? MotorBusInitStatus::OK : MotorBusInitStatus::NO_RESPONSE;
     return _init_status;
-}
-
-// Consomme les réponses encore en attente après un Ping broadcast réussi.
-// Trame attendue : FF FF ID 02 ERR CHK, validée comme Ping (LEN + checksum).
-void MotorBus::drain_broadcast_responses() {
-    uint8_t win[6] = {0, 0, 0, 0, 0, 0};
-    unsigned long deadline = millis() + 30;
-    while ((long)(millis() - deadline) < 0) {
-        int c = Serial2.read();
-        if (c < 0) {
-            continue;
-        }
-        memmove(win, win + 1, 5);
-        win[5] = (uint8_t)c;
-        deadline = millis() + 10; // prolonge tant que des octets arrivent
-        if (win[0] == 0xFF && win[1] == 0xFF && win[3] == 0x02 && win[2] <= 0xFD &&
-            win[5] == (uint8_t)~(win[2] + win[3] + win[4])) {
-            bool known = false;
-            for (uint8_t i = 0; i < _n_found; ++i) {
-                if (_found_ids[i] == win[2]) {
-                    known = true;
-                    break;
-                }
-            }
-            if (!known && _n_found < MAX_FOUND_IDS) {
-                _found_ids[_n_found++] = win[2];
-            }
-            memset(win, 0, sizeof(win));
-        }
-    }
 }
 
 uint8_t MotorBus::get_found_count() const {
@@ -138,6 +138,8 @@ MotorBusResponseFrame MotorBus::parse_and_run(
             return handle_sync_write(frame, len);
         case MotorBusCommands::CMD_SYNC_READ:
             return handle_sync_read(frame, len);
+        case MotorBusCommands::CMD_RESCAN_BUS:
+            return handle_rescan_bus(frame, len);
         default:
             #ifdef __DEBUG_MOTOR_BUS
             Serial.print("MotorBus: unknown command 0x");
@@ -153,6 +155,17 @@ MotorBusResponseFrame MotorBus::handle_status(const uint8_t* frame, uint16_t len
         return make_response_frame(MotorBusErrors::BAD_FRAME);
     }
 
+    uint8_t data[1];
+    data[0] = (uint8_t)_init_status;    
+    return make_response_frame(MotorBusErrors::OK, data, 1);    
+}
+
+MotorBusResponseFrame MotorBus::handle_rescan_bus(const uint8_t* frame, uint16_t len) {
+    // RESCAN_BUS : [cmd]
+    if (len != 1) {
+        return make_response_frame(MotorBusErrors::BAD_FRAME);
+    }
+    scan_bus();
     uint8_t data[1];
     data[0] = (uint8_t)_init_status;    
     return make_response_frame(MotorBusErrors::OK, data, 1);    

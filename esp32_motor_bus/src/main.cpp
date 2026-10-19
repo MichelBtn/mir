@@ -66,7 +66,7 @@ void send_response(Stream& stream, const char* cmd, const char* response) {
 
 void load_configuration() {
   prefs.begin("sensor_cfg", false);
-  set_str_value(sensor_type, sizeof(sensor_type), prefs.getString("sensor_type", "simulation"));
+  set_str_value(sensor_type, sizeof(sensor_type), "esp32_feetech");
   set_str_value(sensor_id, sizeof(sensor_id), prefs.getString("sensor_id", "esp_0"));
   set_str_value(ap1_ssid, sizeof(ap1_ssid), prefs.getString("ap1_ssid", ""));
   set_str_value(ap1_pwd, sizeof(ap1_pwd), prefs.getString("ap1_pwd", ""));
@@ -146,7 +146,6 @@ bool connect_to_ap(const char* ssid, const char* pwd, const char* ip_addr) {
 
 void save_configuration() {
   prefs.begin("sensor_cfg", false);
-  prefs.putString("sensor_type", sensor_type);
   prefs.putString("sensor_id", sensor_id);
   prefs.putString("ap1_ssid", ap1_ssid);
   prefs.putString("ap1_pwd", ap1_pwd);
@@ -161,9 +160,6 @@ void save_configuration() {
 
 void set_configuration(Stream& stream, const Command& command) {
   String arg_value;
-  if((arg_value = command.getArgValue("sensor_type")).length() > 0)  {
-    set_str_value(sensor_type, sizeof(sensor_type), arg_value);
-  }
   if((arg_value = command.getArgValue("sensor_id")).length() > 0) {
     set_str_value(sensor_id, sizeof(sensor_id), arg_value);
   }

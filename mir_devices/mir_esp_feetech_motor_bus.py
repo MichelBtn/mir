@@ -51,6 +51,7 @@ class MotorBusCommands(Enum):
     CMD_READ = 0x03
     CMD_SYNC_WRITE = 0x04
     CMD_SYNC_READ = 0x05
+    CMD_RESCAN_BUS = 0x10
 
 class MotorBusErrors(Enum):
     OK =            0x00
@@ -94,8 +95,7 @@ class Esp32MotorBusProxy:
             self.sock = socket.create_connection((self.ip, self.port))
         except Exception as e:
             raise MotorBusNotConnected(f"Echec connexion Esp32MotorBus sur '{self.ip}:{self.port}': {e}")
-        response = self._send(b'\x01')
-        print(response[0])
+        response = self.read_status()
         if response[0] != MotorBusErrors.OK.value:
             raise MotorBusError(f"L'esp32 a retourné une erreur : {response[0]}")
         if response[1] != MotorBusInitStatus.OK.value:
@@ -131,14 +131,18 @@ class Esp32MotorBusProxy:
         response = self._recv_exact(response_len)
         return response
     
-    def _check_not_connected(self):
+    def _check_connected(self):
         if not self._is_connected:
             raise MotorBusNotConnected(
                 f"{self.__class__.__name__} is not connected. Run `.connect()` first."
             )
 
+    def read_status(self):
+        payload = MotorBusCommands.CMD_STATUS.value.to_bytes(1, 'little')
+        return self._send(payload)
+
     def read_reg(self, id: int, addr: int, count: int) -> int:
-        self._check_not_connected()
+        self._check_connected()
         try:
             if not 0 <= id <= 0xFD:
                 raise ValueError(f"ID servo invalide : {id:#x}")
@@ -163,7 +167,7 @@ class Esp32MotorBusProxy:
             raise
 
     def write_reg(self, id: int, addr:int, value:int, length:int):
-        self._check_not_connected()
+        self._check_connected()
         try:
             if length == 1:
                 payload = struct.pack("<BBBB", MotorBusCommands.CMD_WRITE.value, id, addr, value)
@@ -188,7 +192,7 @@ class Esp32MotorBusProxy:
         # [0x04, NID, IDs, NREG, (REG, LEN, DATA_m0..DATA_mn, GAP_L, GAP_H) × NREG] -> [status]
         # LEN = longueur en octets de chaque bloc moteur, déduit de values.
         # GAP = attente µs après l'écriture (little-endian), ignorée si dernier registre.
-        self._check_not_connected()
+        self._check_connected()
         try:
             nid = len(ids)
             if not 1 <= nid <= 255:
@@ -249,7 +253,7 @@ class Esp32MotorBusProxy:
         # [0x05, NID, IDs, ADDR, COUNT] -> [status, data_m0(COUNT)..]
         # count octets contigus depuis addr sur chaque moteur ; le résultat est
         # une liste de bytes dans l'ordre des ids.
-        self._check_not_connected()
+        self._check_connected()
         try:
             nid = len(ids)
             if not 1 <= nid <= 255:
@@ -288,9 +292,16 @@ class Esp32MotorBusProxy:
             raise
 
     def broadcast_ping(self) -> list[int]:
-        self._check_not_connected()
+        self._check_connected()
         return []
 
+    def rescan_bus(self):
+        self._check_connected()
+        payload = MotorBusCommands.CMD_RESCAN_BUS.value.to_bytes(1, 'little')
+        response = self._send(payload)
+        if len(response) < 1 or response[0] != MotorBusErrors.OK.value or response[1] != MotorBusInitStatus.OK.value:
+            raise MotorBusError(f"CMD_RESCAN_BUS : {response[:1]}")
+        return response
 
 class mirEspFeetechMotorBus(ImirFeetechMotorBus):
    
@@ -936,7 +947,13 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
     def mir_get_motor_velocity_range(self, motor:str)->tuple[float, float]:
         max_ = self.mir_read_register("Maximum_Velocity_Limit", motor)
         return (-max_, max_)
-    
+        
+    def mir_change_motor_id(self, motor_name, new_id:int):
+        self.mir_write_register_by_id("Lock", self._mir_motors[motor_name].id, 0)
+        self.mir_write_register_by_id("ID", self._mir_motors[motor_name].id, new_id)
+        self.mir_write_register_by_id("Lock", motor_id=new_id, value=1)
+        self._proxy.rescan_bus()
+
     def get_observation(self) -> dict[str, ObservationValue]:
         observation : dict[str, ObservationValue]= {}
         if len(self.subscribed_observations) > 0:

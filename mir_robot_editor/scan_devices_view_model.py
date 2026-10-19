@@ -4,7 +4,7 @@ from typing_extensions import override
 from PySide6.QtCore import Signal
 import time
 from mir_devices.mir_sensor import mirSensorConfiguration
-from mir_devices.mir_device import ObservableProperty
+from mir_devices.mir_device import ObservableProperty, mirDeviceConfiguration
 from mir_devices.mir_feetech_motor_bus import mirMotorBusConfiguration
 from mir_robot.mir_robot_config import mirRobotConfig
 from mir_utils.concurrency import BackgroundWorker
@@ -178,7 +178,7 @@ class ScanDevicesViewModel(ViewModelBase[ScanDevicesVMAction]):
         found_devices : list[DiscoveredDeviceViewModel] = []
         timeout = 5.0
 
-        def callback(device:mirSensorConfiguration|mirMotorBusConfiguration):
+        def callback(device:mirDeviceConfiguration):
             if isinstance(device, mirSensorConfiguration):
                 found_devices.append(DiscoveredSensorViewModel("", device))
             elif isinstance(device, mirMotorBusConfiguration):
@@ -196,8 +196,9 @@ class ScanDevicesViewModel(ViewModelBase[ScanDevicesVMAction]):
         scanner_result: DiscoveryScannerResult = result[0]
         scanner_info = result[1]
         self._devices = [DiscoveredSensorViewModel(key, sensor_cfg) for key, sensor_cfg in scanner_result.sensors.items()]
-        if scanner_result.motor_bus is not None:
-            self._devices.append(DiscoveredMotorBusViewModel("", scanner_result.motor_bus))
+        if scanner_result.motor_buses is not None:
+            for key, motor_bus in scanner_result.motor_buses.items():
+                self._devices.append(DiscoveredMotorBusViewModel(key, motor_bus))
         
         self.scan_completed.emit(self._devices)
         if self._devices is not None and len(self._devices) > 0:

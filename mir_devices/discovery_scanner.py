@@ -9,12 +9,13 @@ import ipaddress
 import psutil
 from dataclasses import dataclass
 from lerobot.motors import MotorNormMode
-from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirSerialFeetechMotorBusConfiguration, mirMotor, mirEspFeetechMotorBusConfiguration
+from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirSerialFeetechMotorBusConfiguration, mirMotor, mirEspFeetechMotorBusConfiguration, mirMotorBusConfiguration
 from mir_devices.mir_sensor import (mirPiCameraConfiguration,
                                     mirSensorConfiguration, 
                                     EspSensorSimulationConfiguration, 
                                     EspSensorWheatherConfiguration, 
                                     EspSensorLidarConfiguration)
+from mir_devices.mir_device import mirDeviceConfiguration
 
 DISCOVERY_PORT = 5679           # port d'écoute des équipements
 REPLY_PORT     = 5678           # port sur lequel le PC reçoit les réponses
@@ -35,7 +36,7 @@ l'id sera la clé du dictionnaire de mirSensor accédée par le robot
 @dataclass
 class DiscoveryScannerResult:
     sensors:dict[str, mirSensorConfiguration]
-    motor_bus:mirSerialFeetechMotorBusConfiguration | None
+    motor_buses:dict[str, mirMotorBusConfiguration]
 
 class DiscoveryScanner():
     def __init__(self):
@@ -43,7 +44,7 @@ class DiscoveryScanner():
         self._executor = ThreadPoolExecutor(max_workers=1)
         
     # ─── Scanner ─────────────────────────────────────────────────────────────────
-    def _parse_ip_response(self, ip: str, data: bytes) -> tuple[str | None, mirSensorConfiguration | mirEspFeetechMotorBusConfiguration | None]:
+    def _parse_ip_response(self, ip: str, data: bytes) -> tuple[str | None, mirDeviceConfiguration| None]:
         try:
             payload = json.loads(data.decode())
             device_type = payload["type"]
@@ -119,7 +120,7 @@ class DiscoveryScanner():
 
         return list(broadcasts)
 
-    def _scan_ip_devices(self) -> dict[str, mirSensorConfiguration]:
+    def _scan_ip_devices(self) -> dict[str, mirDeviceConfiguration]:
         self._stop_scan = False
         broadcasts = self.get_broadcast_addresses()
         if not broadcasts:
@@ -128,7 +129,7 @@ class DiscoveryScanner():
             self._result_info += message
             return {}
 
-        devices: dict[str, mirSensorConfiguration] = {}
+        devices: dict[str, mirDeviceConfiguration] = {}
         seen: set[str] = set()
 
         recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -190,12 +191,18 @@ class DiscoveryScanner():
         with ThreadPoolExecutor(max_workers=2) as ex:
             f_wifi   = ex.submit(self._scan_ip_devices)
             f_motors = ex.submit(self._scan_motors)
-            return DiscoveryScannerResult(f_wifi.result(), f_motors.result())  
+            devices = f_wifi.result()
+            ip_sensors: dict[str, mirSensorConfiguration] = {name:device for name, device in devices.items() if isinstance(device, mirSensorConfiguration)}
+            ip_motors: dict[str, mirEspFeetechMotorBusConfiguration] ={name:device for name, device in devices.items() if isinstance(device, mirEspFeetechMotorBusConfiguration)}
+            serial_motor = f_motors.result()
+            serial_motors = {"motor_bus": serial_motor} if serial_motor else {}
+            motor_buses: dict[str, mirMotorBusConfiguration] = {**ip_motors, **serial_motors}
+            return DiscoveryScannerResult(ip_sensors, motor_buses)  
 
     def run(self, 
             on_done_callback: Optional[Callable] = None, 
             timeout:float = 3.0,  
-            progress_callback: Callable[[mirSensorConfiguration|mirSerialFeetechMotorBusConfiguration], None]|None=None) -> None:
+            progress_callback: Callable[[mirDeviceConfiguration], None]|None=None) -> None:
     
         if self._future is not None and not self._future.done():
             raise RuntimeError("Un scan est déjà en cours. Attendez la fin ou appelez stop_scan() avant de relancer.")
@@ -254,8 +261,10 @@ def animate(interval=0.1):
     finally:
         print(f"\r{' ' * 40}\r", end=' ', flush=True)
 
+import pprint
+
 if __name__ == "__main__":
-    def callback(device: mirSerialFeetechMotorBusConfiguration|mirSensorConfiguration):
+    def callback(device: mirDeviceConfiguration):
         print(f"Device found: {str(device)}")
 
     scanner = DiscoveryScanner()
@@ -268,6 +277,7 @@ if __name__ == "__main__":
     print("\r\n=== équipements découverts ===")
     for device_id, device in result.sensors.items():
         print(f"{device_id} : {str(device)}")
-    if result.motor_bus:
-        print(f"moteurs : {str(result.motor_bus)}")
+    if result.motor_buses:
+        pprint.pprint(f"moteurs : {str(result.motor_buses)}")
+
 

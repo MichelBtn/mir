@@ -1,11 +1,11 @@
 from typing_extensions import override
 from PySide6.QtCore import Signal, QTimer
-from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirMotorBusConfiguration
+from mir_devices.mir_feetech_motor_bus import mirFeetechMotorsBus, mirMotorBusConfiguration, ImirFeetechMotorBus
 from mir_utils.concurrency import BackgroundWorker
 from dataclasses import dataclass
 from mir_utils.ui.view_model_base import ViewModelBase
 from mir_utils.ui.dialogs import IDialogProvider
-
+from mir_devices.mir_devices_factory import DefaultFeetechMotorBusFactory
 @dataclass
 class MotorData():
     name: str = ""
@@ -64,7 +64,7 @@ class MotorConfigureIDsViewModel(ViewModelBase):
         self._timer = QTimer()
         self._timer.timeout.connect(self.on_timer)
         self._worker = BackgroundWorker(max_workers=1)
-        self._bus: mirFeetechMotorsBus = mirFeetechMotorsBus(self._config)
+        self._bus: ImirFeetechMotorBus = DefaultFeetechMotorBusFactory().create_bus(self._config)
         self._bus.mir_connect()
         self._bus.mir_configure_motors()
         self._timer.start(200)
@@ -108,9 +108,7 @@ class MotorConfigureIDsViewModel(ViewModelBase):
 
     def apply_motor_id(self, motor_name, new_id: int):
         try:            
-            self._bus.mir_write_register_by_id("Lock", self._motors_data[motor_name].id, 0)
-            self._bus.mir_write_register_by_id("ID", self._motors_data[motor_name].id, new_id)
-            self._bus.mir_write_register_by_id("Lock", motor_id=new_id, value=1)
+            self._bus.mir_change_motor_id(motor_name, new_id)
             self._motors_data[motor_name].id = new_id
             return True
         except Exception as e:

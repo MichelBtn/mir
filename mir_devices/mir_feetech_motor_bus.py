@@ -16,7 +16,8 @@ from mir_devices.mir_device import (mirDevice,
                                     ObservablePropertyFloat, 
                                     ImirFeetechMotorBus, 
                                     DeviceAction,
-                                    mirMotorCalibration)
+                                    mirMotorCalibration,
+                                    mirDeviceConfiguration)
 from mir_utils.events import Event_
 from mir_devices.communication_ports import find_acm_serial_ports
 
@@ -106,7 +107,7 @@ class MotorBusType(Enum):
     ESP32_FEETECH_MOTOR_BUS = "esp32_feetech"
 
 @dataclass
-class mirMotorBusConfiguration:
+class mirMotorBusConfiguration(mirDeviceConfiguration):
     motors: dict[str, mirMotor]
     calibration: dict[str, mirMotorCalibration]
     motor_bus_type: str = ""
@@ -519,6 +520,11 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         max_ = self.mir_read_register("Maximum_Velocity_Limit", motor)
         return (-max_, max_)
     
+    def mir_change_motor_id(self, motor_name, new_id:int):
+        self.mir_write_register_by_id("Lock", self._mir_motors[motor_name].id, 0)
+        self.mir_write_register_by_id("ID", self._mir_motors[motor_name].id, new_id)
+        self.mir_write_register_by_id("Lock", motor_id=new_id, value=1)
+
     def get_observation(self) -> dict[str, ObservationValue]:
         observation : dict[str, ObservationValue]= {}
         if len(self.subscribed_observations) > 0:

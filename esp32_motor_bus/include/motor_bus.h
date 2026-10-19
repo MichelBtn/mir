@@ -28,6 +28,7 @@ enum class MotorBusCommands : uint8_t {
     CMD_READ = 0x03,
     CMD_SYNC_WRITE = 0x04,
     CMD_SYNC_READ = 0x05,
+    CMD_RESCAN_BUS = 0x10,
 };
 
 enum class MotorBusErrors : uint8_t {
@@ -55,6 +56,7 @@ private:
     bool _initialized = false;
     uint8_t _found_ids[MAX_FOUND_IDS];
     uint8_t _n_found = 0;
+    uint32_t _baud;
     void drain_broadcast_responses();
     MotorBusResponseFrame make_response_frame(MotorBusErrors code);
     MotorBusResponseFrame make_response_frame(MotorBusErrors code, const uint8_t* payload, uint16_t payload_len);
@@ -63,6 +65,8 @@ private:
     MotorBusResponseFrame handle_status(const uint8_t* frame, uint16_t len);
     MotorBusResponseFrame handle_sync_write(const uint8_t* frame, uint16_t len);
     MotorBusResponseFrame handle_sync_read(const uint8_t* frame, uint16_t len);
+    MotorBusResponseFrame handle_rescan_bus(const uint8_t* frame, uint16_t len);
+    MotorBusInitStatus scan_bus();
     MotorBusInitStatus _init_status = MotorBusInitStatus::NO_RESPONSE;
 public:
     void update_data();

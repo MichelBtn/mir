@@ -97,6 +97,10 @@ def device_feature_name_from_feature(feature: str) -> tuple[str, str]:
         return elems[0], elems[1]
     return elems[0], ""            
 
+@dataclass
+class mirDeviceConfiguration:
+    pass        
+
 class mirDevice(ABC):
 
     def __init__(self):
@@ -317,6 +321,10 @@ class ImirFeetechMotorBus(mirDevice):
         """Arrêt d'urgence des moteurs."""
         pass
 
+    @abstractmethod
+    def mir_change_motor_id(self, motor_name, new_id:int):
+        pass
+    
     @staticmethod
     @abstractmethod
     def mir_scan_motors_on_all_ports() -> tuple[str, list[int]] | tuple[None, None]:
@@ -401,3 +409,4 @@ class mirDevices:
             device.send_action(device_actions)
         
         return action
+

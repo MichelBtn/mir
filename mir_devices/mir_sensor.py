@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import Any
 import dacite
 from dataclasses import dataclass
-from mir_devices.mir_device import mirDevice
+from mir_devices.mir_device import mirDevice, mirDeviceConfiguration
 
 PropertyType = Literal["int", "float", "bool", "str", "list"]
 
@@ -22,7 +22,7 @@ class SensorProperty:
     tooltip: str = ""
 
 @dataclass
-class mirSensorConfiguration:
+class mirSensorConfiguration(mirDeviceConfiguration):
     sensor_type: str
 
     @staticmethod
