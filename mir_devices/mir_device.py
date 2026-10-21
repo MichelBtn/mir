@@ -269,6 +269,10 @@ class ImirFeetechMotorBus(mirDevice):
         pass
 
     @abstractmethod
+    def mir_read_voltages(self, motors: list[str]|None = None) -> dict[str, int|float]:
+        pass
+
+    @abstractmethod
     def mir_reset_calibration(self) -> None:
         """Réinitialise la calibration de tous les moteurs."""
         pass

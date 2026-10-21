@@ -1,15 +1,54 @@
 #include <Arduino.h>
+#include <string.h>
 #include "motor_bus.h"
 #include "SCServo.h"
 
 #define __DEBUG_MOTOR_BUS
 
 void MotorBus::update_data() {
-    //...
+    if (!_initialized || _n_found == 0) {
+        return;
+    }
+
+    uint8_t block_a[MAX_FOUND_IDS * STREAM_BLOCK_A_SIZE];
+    uint8_t block_b[MAX_FOUND_IDS * STREAM_BLOCK_B_SIZE];
+
+    unsigned long saved_timeout = sc.IOTimeOut;
+    sc.IOTimeOut = STREAM_IO_TIMEOUT_MS;
+    bool ok = sync_read_block(_found_ids, _n_found, STREAM_BLOCK_A_ADDR,
+                              STREAM_BLOCK_A_SIZE, block_a);
+    if (ok) {
+        ok = sync_read_block(_found_ids, _n_found, STREAM_BLOCK_B_ADDR,
+                             STREAM_BLOCK_B_SIZE, block_b);
+    }
+    sc.IOTimeOut = saved_timeout;
+
+    // Échec : on conserve la dernière trame valide. Le compteur n'avance pas,
+    // ce qui permet au client de détecter un flux gelé.
+    if (!ok) {
+        return;
+    }
+
+    uint16_t off = 0;
+    _data_frame[off++] = STREAM_VERSION;
+    _data_frame[off++] = _n_found;
+    _data_frame[off++] = (uint8_t)(_data_counter & 0xFF);
+    _data_frame[off++] = (uint8_t)(_data_counter >> 8);
+    _data_frame[off++] = STREAM_RECORD_SIZE;
+    for (uint8_t i = 0; i < _n_found; ++i) {
+        _data_frame[off++] = _found_ids[i];
+        memcpy(&_data_frame[off], &block_a[i * STREAM_BLOCK_A_SIZE], STREAM_BLOCK_A_SIZE);
+        off += STREAM_BLOCK_A_SIZE;
+        memcpy(&_data_frame[off], &block_b[i * STREAM_BLOCK_B_SIZE], STREAM_BLOCK_B_SIZE);
+        off += STREAM_BLOCK_B_SIZE;
+    }
+    _data_frame_len = off;
+    ++_data_counter;
 }
 
 uint8_t* MotorBus::get_data_frame(uint16_t& len) {
-    return nullptr;
+    len = _data_frame_len;
+    return (_data_frame_len > 0) ? _data_frame : nullptr;
 }
 
 namespace {
@@ -31,6 +70,9 @@ MotorBusInitStatus MotorBus::init(uint32_t baud, int rx_pin, int tx_pin) {
     if (_initialized) {
         Serial2.end();
     }
+    // Réponses syncRead potentiellement en rafale (32 moteurs) : agrandir le
+    // buffer RX avant begin() pour éviter tout débordement.
+    Serial2.setRxBufferSize(1024);
     Serial2.begin(baud, SERIAL_8N1, rx_pin, tx_pin);
     sc.pSerial = &Serial2;
     return scan_bus();
@@ -355,6 +397,42 @@ MotorBusResponseFrame MotorBus::handle_sync_write(const uint8_t* frame, uint16_t
     return make_response_frame(MotorBusErrors::OK);
 }
 
+// Lit un bloc contigu (addr, count) sur nid moteurs. Les données sont écrites
+// par moteur dans out[i * count], dans l'ordre des ids. Retourne false dès
+// qu'un moteur ne répond pas (la transaction est alors abandonnée).
+bool MotorBus::sync_read_block(uint8_t* ids, uint8_t nid, uint8_t addr,
+                               uint8_t count, uint8_t* out) {
+    if (ids == nullptr || out == nullptr || nid == 0 || count == 0) {
+        return false;
+    }
+    // Purge le buffer RX : syncReadPacketTx, contrairement à Read/syncWrite,
+    // n'appelle pas rFlushSCS ; des checksums résiduels traîneraient d'une
+    // transaction précédente.
+    while (Serial2.available()) {
+        Serial2.read();
+    }
+
+    sc.syncReadPacketTx(ids, nid, addr, count);
+    for (uint8_t i = 0; i < nid; ++i) {
+        // Réponse par moteur, dans l'ordre des IDs ; 0 = échec (timeout,
+        // en-tête). Erreur servo (Error) non traitée, comme Read.
+        if (sc.syncReadPacketRx(ids[i], &out[i * count]) != count) {
+            return false;
+        }
+        // La lib SCS ne consomme pas l'octet de checksum en fin de réponse
+        // (SCS.cpp:325, bBuf[4] déclaré mais 3 octets lus). On l'attend avant
+        // de le jeter : une lecture non bloquante peut le manquer (il est
+        // encore en transit), et un checksum 0xFF serait alors confondu avec
+        // l'en-tête FF FF de la réponse suivante -> NACK intermittent.
+        unsigned long t_start = millis();
+        while (!Serial2.available() && (millis() - t_start) < 2) { }
+        if (Serial2.available()) {
+            Serial2.read();
+        }
+    }
+    return true;
+}
+
 MotorBusResponseFrame MotorBus::handle_sync_read(const uint8_t* frame, uint16_t len) {
     // SYNC_READ : [cmd, nid, id.., addr, count] -> [status, data_m0.., data_m1..]
     //   count octets contigus depuis addr sur les nid moteurs, données groupées
@@ -404,35 +482,9 @@ MotorBusResponseFrame MotorBus::handle_sync_read(const uint8_t* frame, uint16_t 
     Serial.println(count);
     #endif
 
-    // Purge le buffer RX : syncReadPacketTx, contrairement à Read/syncWrite,
-    // n'appelle pas rFlushSCS ; des checksums résiduels traîneraient d'une
-    // transaction précédente.
-    while (Serial2.available()) {
-        Serial2.read();
-    }
-
-    sc.syncReadPacketTx(ids, nid, addr, count);
     uint8_t data[255];
-    for (uint8_t i = 0; i < nid; ++i) {
-        // Réponse par moteur, dans l'ordre des IDs ; 0 = échec (timeout,
-        // en-tête). Erreur servo (Error) non traitée, comme Read.
-        if (sc.syncReadPacketRx(ids[i], &data[i * count]) != count) {
-            #ifdef __DEBUG_MOTOR_BUS
-            Serial.print("SYNC_READ: no/failed response for ID=");
-            Serial.println(ids[i]);
-            #endif
-            return make_response_frame(MotorBusErrors::STS_NACK);
-        }
-        // La lib SCS ne consomme pas l'octet de checksum en fin de réponse
-        // (SCS.cpp:325, bBuf[4] déclaré mais 3 octets lus). On l'attend avant
-        // de le jeter : une lecture non bloquante peut le manquer (il est
-        // encore en transit), et un checksum 0xFF serait alors confondu avec
-        // l'en-tête FF FF de la réponse suivante -> NACK intermittent.
-        unsigned long t_start = millis();
-        while (!Serial2.available() && (millis() - t_start) < 2) { }
-        if (Serial2.available()) {
-            Serial2.read();
-        }
+    if (!sync_read_block(ids, nid, addr, count, data)) {
+        return make_response_frame(MotorBusErrors::STS_NACK);
     }
     return make_response_frame(MotorBusErrors::OK, data, (uint16_t)nid * count);
 }

@@ -264,12 +264,19 @@ void dispatch_command(Stream& stream, CommandSource source, const String& line) 
 }
 
 void handle_tcp_data_streaming(uint8_t* buffer, uint16_t len) {
-  if (!tcp_data_client || !tcp_data_client.connected()) {
-    if (tcp_data_client) tcp_data_client.stop();
-    tcp_data_client = tcpDataServer.available();
+  // Une nouvelle connexion remplace toujours l'ancienne : le client peut se
+  // reconnecter avant que la fermeture (FIN) de la précédente ne soit vue.
+  if (tcp_data_client && !tcp_data_client.connected())
+    tcp_data_client.stop();
+
+  WiFiClient new_client = tcpDataServer.available();
+  if (new_client) {
     if (tcp_data_client)
-      Serial.println("TCP data client connected.");
+      tcp_data_client.stop();
+    tcp_data_client = new_client;
+    Serial.println("TCP data client connected.");
   }
+
   if (!tcp_data_client || !tcp_data_client.connected()) return;
   if (!buffer) return;
   if (tcp_data_client.write(buffer, len) != len) {
@@ -324,22 +331,25 @@ uint8_t action_buf[MAX_ACTION_SIZE+1];
 void handle_tcp_motor_bus() {
     
 
-    if (!tcp_motor_bus_client || !tcp_motor_bus_client.connected()) {
+    // Une nouvelle connexion remplace toujours l'ancienne : le client peut se
+    // reconnecter avant que la fermeture (FIN) de la précédente ne soit vue.
+    if (tcp_motor_bus_client && !tcp_motor_bus_client.connected())
+        tcp_motor_bus_client.stop();
+
+    WiFiClient new_client = tcpMotorBusServer.available();
+    if (new_client) {
         if (tcp_motor_bus_client)
             tcp_motor_bus_client.stop();
 
-        tcp_motor_bus_client = tcpMotorBusServer.available();
+        tcp_motor_bus_client = new_client;
+        tcp_motor_bus_client.setNoDelay(true);
 
-        if (tcp_motor_bus_client) {
-            tcp_motor_bus_client.setNoDelay(true);
+        // Reset de l'état à chaque nouvelle connexion
+        action_state = ActionState::WAIT_LEN_0;
+        action_expected = 0;
+        action_received = 0;
 
-            // Reset de l'état à chaque nouvelle connexion
-            action_state = ActionState::WAIT_LEN_0;
-            action_expected = 0;
-            action_received = 0;
-
-            Serial.println("TCP motor bus client connected.");
-        }
+        Serial.println("TCP motor bus client connected.");
     }
 
     if (!tcp_motor_bus_client || !tcp_motor_bus_client.connected())
@@ -521,15 +531,20 @@ void loop() {
   static TickType_t last_wake = xTaskGetTickCount();
   vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(loop_period));
   bleProv.handle();
-  _motor_bus->update_data();
   handle_serial();
   if(wifi_connected) {
-    uint16_t len;
-    uint8_t* buffer = _motor_bus->get_data_frame(len);
-    handle_tcp_data_streaming(buffer, len);
+    // Les commandes passent avant la télémétrie. update_data() termine le
+    // tour : le délai du tour suivant laisse ainsi aux octets encore en
+    // transit le temps d'arriver et d'être purgés avant la commande
+    // suivante (évite qu'une réponse sync_read tardive soit lue comme la
+    // réponse d'un CMD_READ).
     handle_tcp_commands();
     handle_tcp_motor_bus();
     handle_discovery();
+    _motor_bus->update_data();
+    uint16_t len;
+    uint8_t* buffer = _motor_bus->get_data_frame(len);
+    handle_tcp_data_streaming(buffer, len);
   }
 }
 

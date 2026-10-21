@@ -51,13 +51,39 @@ class MotorBus {
 public:
     static constexpr uint8_t MAX_FOUND_IDS = 32;
 private:
+    // ─── Flux de télémétrie (update_data / get_data_frame) ──────────────────
+    // Trame : [version u8][n u8][counter u16 LE][stride u8]
+    //         puis n × [id u8][pos i16][vel i16][load i16][volt u8][temp u8][current i16]
+    // Little-endian, valeurs brutes SCS (aucune normalisation) ; l'ordre des
+    // moteurs est celui de _found_ids. Deux syncRead contigus, car SCS ne lit
+    // qu'un seul bloc (addr, len) à la fois :
+    //   A = 0x38..0x3F (Position, Velocity, Load, Voltage, Temperature)
+    //   B = 0x45..0x46 (Current)
+    static constexpr uint8_t STREAM_VERSION = 1;
+    static constexpr uint8_t STREAM_BLOCK_A_ADDR = 0x38;
+    static constexpr uint8_t STREAM_BLOCK_A_SIZE = 8;
+    static constexpr uint8_t STREAM_BLOCK_B_ADDR = 0x45;
+    static constexpr uint8_t STREAM_BLOCK_B_SIZE = 2;
+    static constexpr uint8_t STREAM_DATA_SIZE = STREAM_BLOCK_A_SIZE + STREAM_BLOCK_B_SIZE;
+    static constexpr uint8_t STREAM_RECORD_SIZE = 1 + STREAM_DATA_SIZE; // id + données
+    static constexpr uint8_t STREAM_HEADER_SIZE = 5;
+    static constexpr uint16_t STREAM_MAX_FRAME_SIZE =
+        STREAM_HEADER_SIZE + MAX_FOUND_IDS * STREAM_RECORD_SIZE;
+    // Timeout court : le streaming ne doit pas bloquer la boucle principale.
+    static constexpr uint16_t STREAM_IO_TIMEOUT_MS = 10;
+
     SMS_STS sc;
     MotorBusResponseFrame _response_frame;
     bool _initialized = false;
     uint8_t _found_ids[MAX_FOUND_IDS];
     uint8_t _n_found = 0;
-    uint32_t _baud;
-    void drain_broadcast_responses();
+    uint32_t _baud = 0;
+    uint8_t _data_frame[STREAM_MAX_FRAME_SIZE];
+    uint16_t _data_frame_len = 0;
+    uint16_t _data_counter = 0;
+    // Lit un bloc contigu (addr, count) sur nid moteurs ; données groupées par
+    // moteur dans l'ordre des ids. Gère la purge RX et le checksum final.
+    bool sync_read_block(uint8_t* ids, uint8_t nid, uint8_t addr, uint8_t count, uint8_t* out);
     MotorBusResponseFrame make_response_frame(MotorBusErrors code);
     MotorBusResponseFrame make_response_frame(MotorBusErrors code, const uint8_t* payload, uint16_t payload_len);
     MotorBusResponseFrame handle_write(const uint8_t* frame, uint16_t len);

@@ -22,8 +22,10 @@ import struct
 import socket
 import time
 from enum import Enum
+from threading import Lock
 from typing_extensions import override
 from typing import TypeAlias
+from mir_utils.concurrency import BackgroundWorker
 
 RegValue : TypeAlias = int|float
 
@@ -32,6 +34,7 @@ VELOCITY_SUFFIX = "velocity"
 CURRENT_SUFFIX = "current"
 TEMPERATURE_SUFFIX = "temperature"
 LOAD_SUFFIX = "load"
+VOLTAGE_SUFFIX = "voltage"
 ACTION_POSITION_SUFFIX = "position"
 ACTION_VELOCITY_SUFFIX = "velocity"
 
@@ -67,6 +70,120 @@ class MotorBusInitStatus(Enum):
     UART_ERROR = 1
     NO_RESPONSE = 2 
 
+STREAM_VERSION = 1
+STREAM_HEADER_SIZE = 5
+STREAM_RECORD_SIZE = 11
+STREAM_MAX_MOTORS = 32
+
+@dataclass(frozen=True)
+class MotorBusStreamSnapshot:
+    counter: int
+    timestamp: float
+    values: dict[int, dict[str, int]]
+
+def parse_stream_frame(payload: bytes, count: int, counter: int, timestamp: float) -> MotorBusStreamSnapshot:
+    if len(payload) != count * STREAM_RECORD_SIZE:
+        raise ValueError(f"Trame de flux invalide : {len(payload)} octets pour {count} moteurs")
+    values: dict[int, dict[str, int]] = {}
+    for index in range(count):
+        motor_id, position, velocity, load, voltage, temperature, current = struct.unpack_from(
+            "<BHHHBBH", payload, index * STREAM_RECORD_SIZE
+        )
+        values[motor_id] = {
+            "Present_Position": position,
+            "Present_Velocity": velocity,
+            "Present_Load": load,
+            "Present_Voltage": voltage,
+            "Present_Temperature": temperature,
+            "Present_Current": current,
+        }
+    return MotorBusStreamSnapshot(counter=counter, timestamp=timestamp, values=values)
+
+class Esp32MotorBusStream:
+    """Lecture du flux de télémétrie poussé par l'ESP32 (port 5001).
+
+    Le thread de lecture conserve la dernière trame dans `latest()`. Aucune
+    trame n'est marquée périmée : le consommateur décide de la fraîcheur.
+    """
+
+    def __init__(self, ip: str, port: int = 5001):
+        self._ip = ip
+        self._port = port
+        self._sock: socket.socket | None = None
+        self._worker = BackgroundWorker()
+        self._lock = Lock()
+        self._snapshot: MotorBusStreamSnapshot | None = None
+        self._disconnect_forced_stop_loop = False
+
+    def connect(self) -> None:
+        if self._sock is not None:
+            raise RuntimeError("Le flux de télémétrie est déjà connecté")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect((self._ip, self._port))
+        except OSError:
+            sock.close()
+            raise
+        self._sock = sock
+        self._disconnect_forced_stop_loop = False
+        self._worker.run(self._loop, self._on_loop_finished, self._on_loop_failed)
+
+    def disconnect(self) -> None:
+        self._disconnect_forced_stop_loop = True
+        sock = self._sock
+        self._sock = None
+        if sock is not None:
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            sock.close()
+
+    def latest(self) -> MotorBusStreamSnapshot | None:
+        with self._lock:
+            return self._snapshot
+
+    def _read_exactly(self, size: int) -> bytes:
+        sock = self._sock
+        if sock is None:
+            raise ConnectionError("Socket de télémétrie non initialisé")
+        buf = b""
+        while len(buf) < size:
+            chunk = sock.recv(size - len(buf))
+            if not chunk:
+                raise ConnectionError("Connexion de télémétrie fermée")
+            buf += chunk
+        return buf
+
+    def _loop(self) -> None:
+        while True:
+            try:
+                header = self._read_exactly(STREAM_HEADER_SIZE)
+                version, count, counter, stride = struct.unpack("<BBHB", header)
+                if version != STREAM_VERSION:
+                    raise ValueError(f"Version de flux non supportée : {version}")
+                if stride != STREAM_RECORD_SIZE:
+                    raise ValueError(f"Taille d'enregistrement inattendue : {stride}")
+                if count > STREAM_MAX_MOTORS:
+                    raise ValueError(f"Nombre de moteurs incohérent : {count}")
+                payload = self._read_exactly(count * stride)
+                snapshot = parse_stream_frame(payload, count, counter, time.monotonic())
+                with self._lock:
+                    self._snapshot = snapshot
+            except (ConnectionError, OSError) as e:
+                if not self._disconnect_forced_stop_loop:
+                    logger.error(f"flux de télémétrie interrompu : {e}")
+                break
+            except Exception as e:
+                logger.error(f"flux de télémétrie invalide, lecture arrêtée : {e}")
+                break
+
+    def _on_loop_failed(self, error: Exception) -> None:
+        logger.error(f"thread de télémétrie terminé sur erreur : {error!r}")
+
+    def _on_loop_finished(self, result: None) -> None:
+        pass
+
 @dataclass
 class MotorBusSyncWriteReg:
     addr: int
@@ -89,24 +206,44 @@ class Esp32MotorBusProxy:
         self.sock:socket.socket | None = None
         self._is_connected : bool = False
     
-    def connect(self):
+    def connect(self, attempts: int = 3):
         self._is_connected = False
-        try:
-            self.sock = socket.create_connection((self.ip, self.port))
-        except Exception as e:
-            raise MotorBusNotConnected(f"Echec connexion Esp32MotorBus sur '{self.ip}:{self.port}': {e}")
-        response = self.read_status()
-        if response[0] != MotorBusErrors.OK.value:
-            raise MotorBusError(f"L'esp32 a retourné une erreur : {response[0]}")
-        if response[1] != MotorBusInitStatus.OK.value:
-            raise MotorBusError(f"Le bus moteur n'est pas connecté à l'ESP32 ou n'est pas alimenté ou aucun moteur n'est connecté")
-        self._is_connected = True
+        last_error: Exception | None = None
+        for attempt in range(attempts):
+            try:
+                self.sock = socket.create_connection((self.ip, self.port), timeout=2.0)
+                self.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                response = self.read_status()
+                if response[0] != MotorBusErrors.OK.value:
+                    raise MotorBusError(f"L'esp32 a retourné une erreur : {response[0]}")
+                if response[1] != MotorBusInitStatus.OK.value:
+                    raise MotorBusError(f"Le bus moteur n'est pas connecté à l'ESP32 ou n'est pas alimenté ou aucun moteur n'est connecté")
+                self._is_connected = True
+                return
+            except MotorBusError:
+                self.disconnect()
+                raise
+            except OSError as e:
+                last_error = e
+                self.disconnect()
+                if attempt + 1 < attempts:
+                    logger.warning(
+                        f"connexion Esp32MotorBus sur '{self.ip}:{self.port}' interrompue ({e}), "
+                        f"nouvel essai {attempt + 1}/{attempts - 1}"
+                    )
+                    time.sleep(0.1)
+        raise MotorBusNotConnected(f"Echec connexion Esp32MotorBus sur '{self.ip}:{self.port}': {last_error}")
 
     def disconnect(self):
-        if self.sock is not None:
-            self.sock.close()
+        sock = self.sock
         self.sock = None
         self._is_connected = False
+        if sock is not None:
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            sock.close()
 
     def _recv_exact(self, size):
         if self.sock is None:
@@ -323,6 +460,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
             elif motor_cfg.operating_mode == OperatingMode.VELOCITY:                        
                 self._actions[f"{motor_name}.{ACTION_VELOCITY_SUFFIX}"] = DeviceAction(motor_name, ACTION_VELOCITY_SUFFIX, 0,'int', '°/s', None)
         self._proxy = Esp32MotorBusProxy(config.ip_address)
+        self._stream = Esp32MotorBusStream(config.ip_address)
         self._encoding_table = {
             "Present_Load": 10,
             "Homing_Offset": 11,
@@ -546,6 +684,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
             return {}
         reg = sts3215_registers[data_name]
         ids = [self._mir_motors[motor].id for motor in motors]
+        raw_values: list[bytes] = []
         for attempt in range(num_retry + 1):
             try:
                 raw_values = self._proxy.sync_read(ids, reg.address, reg.size)
@@ -557,11 +696,60 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
                     f"sync_read {data_name} en échec (tentative {attempt + 1}/{num_retry + 1}), nouvel essai"
                 )
         id_values = {id_: int.from_bytes(raw, "little") for id_, raw in zip(ids, raw_values)}
-        id_values = self._decode_sign(data_name, id_values)
+        return self._decode_values(data_name, id_values, motors, normalize=normalize)
+
+    def _decode_values(
+        self,
+        data_name: str,
+        id_values: dict[int, int],
+        motors: list[str],
+        *,
+        normalize: bool,
+    ) -> dict[str, RegValue]:
+        values = self._decode_sign(data_name, id_values)
         if normalize and data_name in self._normalized_data:
-            id_values = self._normalize(id_values)
-        return {motor: id_values[self._mir_motors[motor].id] for motor in motors}
-            
+            values = self._normalize(values)
+        return {
+            motor: values[self._mir_motors[motor].id]
+            for motor in motors
+            if self._mir_motors[motor].id in values
+        }
+
+    def _stream_read(
+        self,
+        data_name: str,
+        motors: str | list[str] | None = None,
+        *,
+        normalize: bool = True,
+    ) -> dict[str, RegValue]:
+        if motors is None:
+            motors = list(self._mir_motors.keys())
+        elif isinstance(motors, str):
+            motors = [motors]
+        if not motors:
+            return {}
+        snapshot = self._stream.latest()
+        if snapshot is None:
+            return {}
+        id_values = {
+            self._mir_motors[motor].id: snapshot.values[self._mir_motors[motor].id][data_name]
+            for motor in motors
+            if self._mir_motors[motor].id in snapshot.values
+            and data_name in snapshot.values[self._mir_motors[motor].id]
+        }
+        return self._decode_values(data_name, id_values, motors, normalize=normalize)
+
+    def _read_present(
+        self,
+        data_name: str,
+        motors: str | list[str] | None,
+        *,
+        normalize: bool,
+        source: str,
+    ) -> dict[str, RegValue]:
+        if source == "stream":
+            return self._stream_read(data_name, motors, normalize=normalize)
+        return self._sync_read(data_name, motors, normalize=normalize)
 
     def _read_calibration(self) -> dict[str, mirMotorCalibration]:
         offsets, mins, maxes = {}, {}, {}
@@ -638,6 +826,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
             raise ConnectionError("Le bus est déjà connecté")
         try :
             self._proxy.connect()
+            self._stream.connect()
             self._mir_is_ready = True
             self._is_connected = True
             mirEspFeetechMotorBus._bus_connected[self._config.ip_address] = True
@@ -654,13 +843,19 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
                     self._actions[f"{motor_name}.{ACTION_VELOCITY_SUFFIX}"].set_range(range)
         except BaseException as e:
             self._mir_is_ready = False
+            self._is_connected = False
+            self._stream.disconnect()
+            self._proxy.disconnect()
+            mirEspFeetechMotorBus._bus_connected[self._config.ip_address] = False
             raise e
         self._set_is_calibrated(self.check_is_calibrated())
                
     def mir_disconnect(self):
+        self._stream.disconnect()
         if self._is_connected:
             self._proxy.disconnect()
             self._is_connected = False
+        self._mir_is_ready = False
         mirEspFeetechMotorBus._bus_connected[self._config.ip_address] = False
 
     def mir_is_connected(self) -> bool:
@@ -795,20 +990,23 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
 
     def mir_read_positions(self, motors: list[str]|None = None) -> dict[str, int|float]:
         self._check_mir_is_ready()
+        return self._positions_from(motors, "bus")
+
+    def _positions_from(self, motors: list[str]|None, source: str) -> dict[str, int|float]:
         if not self._mir_is_calibrated or self._mir_calibration is None:
-            return self._sync_read("Present_Position", motors, normalize=False)
+            return self._read_present("Present_Position", motors, normalize=False, source=source)
         if motors is None:
             motors_velocity = [motor for motor in self._mir_motors if self._mir_motors[motor].operating_mode == OperatingMode.VELOCITY]
             motors_positions = [motor for motor in self._mir_motors if self._mir_motors[motor].operating_mode == OperatingMode.POSITION]
         else:
             motors_velocity = [motor for motor in motors if self._mir_motors[motor].operating_mode == OperatingMode.VELOCITY]
             motors_positions = [motor for motor in motors if self._mir_motors[motor].operating_mode == OperatingMode.POSITION]
-        if motors_positions is None or len(motors_positions) == 0:
+        if len(motors_positions) == 0:
             positions = {}
         else:
-            positions = self._sync_read("Present_Position", motors_positions, normalize=True)
-        if motors_velocity is not None and len(motors_velocity) > 0:            
-            positions_velocity = self._sync_read("Present_Position", motors_velocity, normalize=False)
+            positions = self._read_present("Present_Position", motors_positions, normalize=True, source=source)
+        if len(motors_velocity) > 0:            
+            positions_velocity = self._read_present("Present_Position", motors_velocity, normalize=False, source=source)
             for motor, pos in positions_velocity.items():
                 positions[motor] = mirEspFeetechMotorBus.mir_normalize_motor_pos_for_velocity_mode(
                                                         int(pos), 
@@ -822,22 +1020,42 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
 
     def mir_read_velocities(self, motors: list[str]|None = None) -> dict[str, int|float]:
         self._check_mir_is_ready()
-        result = self._sync_read("Present_Velocity", motors)
+        return self._velocities_from(motors, "bus")
+
+    def _velocities_from(self, motors: list[str]|None, source: str) -> dict[str, int|float]:
+        result = self._read_present("Present_Velocity", motors, normalize=True, source=source)
         return {key: int(val * RPM_PER_UNIT + 0.5) for key, val in result.items()}
 
     def mir_read_currents(self, motors: list[str]|None = None) -> dict[str, int|float]:            
         self._check_mir_is_ready()
-        raw_currents = self._sync_read("Present_Current", motors)
+        return self._currents_from(motors, "bus")
+
+    def _currents_from(self, motors: list[str]|None, source: str) -> dict[str, int|float]:
+        raw_currents = self._read_present("Present_Current", motors, normalize=True, source=source)
         return {key: int(val * 6.5 + 0.5) for key, val in raw_currents.items()}
     
     def mir_read_loads(self, motors: list[str]|None = None) -> dict[str, int|float]:
         self._check_mir_is_ready()
-        raw_loads = self._sync_read("Present_Load", motors)
+        return self._loads_from(motors, "bus")
+
+    def _loads_from(self, motors: list[str]|None, source: str) -> dict[str, int|float]:
+        raw_loads = self._read_present("Present_Load", motors, normalize=True, source=source)
         return {key: int(val / 10.0) for key, val in raw_loads.items()}
     
     def mir_read_temperatures(self, motors: list[str]|None = None) -> dict[str, int|float]:            
         self._check_mir_is_ready()
-        return self._sync_read("Present_Temperature", motors)
+        return self._temperatures_from(motors, "bus")
+
+    def _temperatures_from(self, motors: list[str]|None, source: str) -> dict[str, int|float]:
+        return self._read_present("Present_Temperature", motors, normalize=True, source=source)
+
+    def mir_read_voltages(self, motors: list[str]|None = None) -> dict[str, int|float]:
+        self._check_mir_is_ready()
+        return self._voltages_from(motors, "bus")
+
+    def _voltages_from(self, motors: list[str]|None, source: str) -> dict[str, int|float]:
+        raw_voltages = self._read_present("Present_Voltage", motors, normalize=True, source=source)
+        return {key: val / 10.0 for key, val in raw_voltages.items()}
 
     def mir_is_moving(self, motors:list[str]|None=None) -> bool:
         velocities = self._sync_read("Present_Velocity", motors)
@@ -966,26 +1184,31 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
     def get_observation(self) -> dict[str, ObservationValue]:
         observation : dict[str, ObservationValue]= {}
         if len(self.subscribed_observations) > 0:
+            self._check_mir_is_ready()
             positions_features = [feature.split(".")[0] for feature in self.subscribed_observations if feature.endswith(f".{POSITION_SUFFIX}")]
             if len(positions_features) > 0:
-                positions = {f"{key}.{POSITION_SUFFIX}":value for key, value in self.mir_read_positions(positions_features).items()}
+                positions = {f"{key}.{POSITION_SUFFIX}":value for key, value in self._positions_from(positions_features, "stream").items()}
                 observation.update(positions)
             velocities_features = [feature.split(".")[0] for feature in self.subscribed_observations if feature.endswith(f".{VELOCITY_SUFFIX}")]                
             if len(velocities_features) > 0:
-                velocities = {f"{key}.{VELOCITY_SUFFIX}":value for key, value in self.mir_read_velocities(velocities_features).items()}
+                velocities = {f"{key}.{VELOCITY_SUFFIX}":value for key, value in self._velocities_from(velocities_features, "stream").items()}
                 observation.update(velocities)
             currents_features = [feature.split(".")[0] for feature in self.subscribed_observations if feature.endswith(f".{CURRENT_SUFFIX}")]
             if len(currents_features) > 0:
-                currents = {f"{key}.{CURRENT_SUFFIX}":value for key, value in self.mir_read_currents(currents_features).items()}
+                currents = {f"{key}.{CURRENT_SUFFIX}":value for key, value in self._currents_from(currents_features, "stream").items()}
                 observation.update(currents)
             temperatures_features = [feature.split(".")[0] for feature in self.subscribed_observations if feature.endswith(TEMPERATURE_SUFFIX)]
             if len(temperatures_features) > 0:
-                temperatures = {f"{key}.{TEMPERATURE_SUFFIX}":value for key, value in self.mir_read_temperatures(temperatures_features).items()}
+                temperatures = {f"{key}.{TEMPERATURE_SUFFIX}":value for key, value in self._temperatures_from(temperatures_features, "stream").items()}
                 observation.update(temperatures)
             loads_features = [feature.split(".")[0] for feature in self.subscribed_observations if feature.endswith(LOAD_SUFFIX)]
             if len(loads_features) > 0:
-                loads = {f"{key}.{LOAD_SUFFIX}":value for key, value in self.mir_read_loads(loads_features).items()}
+                loads = {f"{key}.{LOAD_SUFFIX}":value for key, value in self._loads_from(loads_features, "stream").items()}
                 observation.update(loads)
+            voltages_features = [feature.split(".")[0] for feature in self.subscribed_observations if feature.endswith(f".{VOLTAGE_SUFFIX}")]
+            if len(voltages_features) > 0:
+                voltages = {f"{key}.{VOLTAGE_SUFFIX}":value for key, value in self._voltages_from(voltages_features, "stream").items()}
+                observation.update(voltages)
         return observation
     
     def get_observables(self) -> dict[str, ObservableProperty]:
@@ -1003,6 +1226,7 @@ class mirEspFeetechMotorBus(ImirFeetechMotorBus):
                 observables[f"{key}.{CURRENT_SUFFIX}"] = ObservablePropertyFloat(0, 2700, "mA")
                 observables[f"{key}.{TEMPERATURE_SUFFIX}"] = ObservablePropertyFloat(0, 100, "°C")
                 observables[f"{key}.{LOAD_SUFFIX}"] = ObservablePropertyFloat(-100, 100, "%")
+                observables[f"{key}.{VOLTAGE_SUFFIX}"] = ObservablePropertyFloat(0, 15, "V")
             return observables
         finally:
             if should_disconnect and self.mir_is_connected():

@@ -151,6 +151,7 @@ VELOCITY_SUFFIX = "velocity"
 CURRENT_SUFFIX = "current"
 TEMPERATURE_SUFFIX = "temperature"
 LOAD_SUFFIX = "load"
+VOLTAGE_SUFFIX = "voltage"
 ACTION_POSITION_SUFFIX = "position"
 ACTION_VELOCITY_SUFFIX = "velocity"
 
@@ -421,6 +422,11 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
         self._check_mir_is_ready()
         return self.sync_read("Present_Temperature", motors)
 
+    def mir_read_voltages(self, motors: list[str]|None = None) -> dict[str, int|float]:
+        self._check_mir_is_ready()
+        raw_voltages = self.sync_read("Present_Voltage", motors)
+        return {key: val / 10.0 for key, val in raw_voltages.items()}
+
     def mir_is_moving(self, motors:list[str]|None=None) -> bool:
         velocities = self.sync_read("Present_Velocity", motors)
         return any(v != 0 for v in velocities.values())
@@ -548,6 +554,10 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
             if len(loads_features) > 0:
                 loads = {f"{key}.{LOAD_SUFFIX}":value for key, value in self.mir_read_loads(loads_features).items()}
                 observation.update(loads)
+            voltages_features = [feature.split(".")[0] for feature in self.subscribed_observations if feature.endswith(f".{VOLTAGE_SUFFIX}")]
+            if len(voltages_features) > 0:
+                voltages = {f"{key}.{VOLTAGE_SUFFIX}":value for key, value in self.mir_read_voltages(voltages_features).items()}
+                observation.update(voltages)
         return observation
     
     def get_observables(self) -> dict[str, ObservableProperty]:
@@ -565,6 +575,7 @@ class mirFeetechMotorsBus(FeetechMotorsBus, ImirFeetechMotorBus):
                 observables[f"{key}.{CURRENT_SUFFIX}"] = ObservablePropertyFloat(0, 2700, "mA")
                 observables[f"{key}.{TEMPERATURE_SUFFIX}"] = ObservablePropertyFloat(0, 100, "°C")
                 observables[f"{key}.{LOAD_SUFFIX}"] = ObservablePropertyFloat(-100, 100, "%")
+                observables[f"{key}.{VOLTAGE_SUFFIX}"] = ObservablePropertyFloat(0, 15, "V")
             return observables
         finally:
             if should_disconnect and self.mir_is_connected():
